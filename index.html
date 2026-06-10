@@ -372,6 +372,21 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 .separator { height: 1px; background: var(--border2); margin: 6px 0; }
 .empty-state { text-align: center; color: var(--text3); font-size: 13px; padding: 30px; }
 
+/* ---- RESEARCH LAB ---- */
+.research-item { background: var(--bg2); border: 1px solid var(--border2); border-radius: 10px; padding: 11px 13px; margin-bottom: 8px; display: flex; align-items: center; gap: 11px; }
+.research-item.researching { border-color: rgba(200,166,74,0.5); background: rgba(200,166,74,0.04); }
+.research-item.known { border-color: rgba(39,174,96,0.3); }
+.research-item.locked { opacity: 0.38; }
+.research-info { flex: 1; min-width: 0; }
+.research-timer { font-size: 18px; font-weight: 800; color: var(--accent); font-family: monospace; min-width: 48px; text-align: right; }
+.research-btn { padding: 6px 11px; border-radius: 8px; border: 1px solid var(--purple); background: rgba(124,92,191,0.15); color: #c4b0f0; font-size: 11px; font-family: var(--font); cursor: pointer; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+.research-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.research-btn.forge { border-color: rgba(39,174,96,0.5); background: rgba(39,174,96,0.1); color: var(--green); }
+/* ---- PER-CARD ATTACK ---- */
+.field-slot.selectable-attacker { border-color: #ff8a65 !important; box-shadow: 0 0 10px rgba(255,138,101,0.4); cursor: pointer; animation: pulse 1s infinite; }
+.field-slot.selectable-attacker:hover { background: rgba(255,138,101,0.12); }
+.mini-card.attacked { opacity: 0.38; }
+
 /* ---- AUTH / LOGIN ---- */
 #screen-login {
   background: radial-gradient(ellipse at top, #1a0e35 0%, #0a0a0f 60%);
@@ -545,26 +560,7 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
     <div class="topbar-title">⚗ Kombinations-Labor</div>
     <div style="font-size:12px;color:var(--text2);" id="combo-count">0 entdeckt</div>
   </div>
-  <div class="combo-area">
-    <div class="combo-slots" id="combo-slots">
-      <div class="combo-slot" id="combo-slot-1" onclick="UI.openComboCardPick(1)">
-        <span style="font-size:24px;">?</span><span>Karte 1</span>
-      </div>
-      <div class="combo-plus">+</div>
-      <div class="combo-slot" id="combo-slot-2" onclick="UI.openComboCardPick(2)">
-        <span style="font-size:24px;">?</span><span>Karte 2</span>
-      </div>
-      <div class="combo-plus">=</div>
-      <div class="combo-result combo-result-unknown" id="combo-result-preview">
-        <div class="combo-result-label">Ergebnis</div>
-        <div class="combo-result-emoji">🔮</div>
-        <div class="combo-result-name">?</div>
-      </div>
-    </div>
-    <button class="combo-btn" id="combo-forge-btn" onclick="UI.forgeCombo()" disabled>⚗ Kombinieren</button>
-    <div class="section-label">Entdeckte Kombinationen</div>
-    <div id="combo-discovered-list"></div>
-  </div>
+  <div class="combo-area" id="combo-area"></div>
 </div>
 
 <!-- SETTINGS -->
@@ -761,6 +757,7 @@ const State = {
   deck: ['feuer','wasser','feuer','wasser','eis','ritter','troll','gnom','licht','schatten'],
   collection: { feuer:3, wasser:3, eis:2, ritter:2, gnom:2, troll:1, licht:1, schatten:1, elfe:1, flug:1 },
   discoveredCombos: [],
+  researchQueue: [],
   defeatedEnemies: [],
   currentRegion: null,
   currentEnemy: null,
@@ -813,22 +810,27 @@ const Game = {
     State.player.gold = 0; State.player.wins = 0;
     State.deck = ['feuer','wasser','feuer','wasser','eis','ritter','troll','gnom','licht','schatten'];
     State.collection = { feuer:3, wasser:3, eis:2, ritter:2, gnom:2, troll:1, licht:1, schatten:1, elfe:1, flug:1 };
-    State.discoveredCombos = [];
+    const _rc = COMBO_RECIPES[Math.floor(Math.random() * COMBO_RECIPES.length)];
+    State.discoveredCombos = [_rc.id];
+    State.researchQueue = [];
     State.defeatedEnemies = [];
+    if (!State.collection[_rc.id]) State.collection[_rc.id] = 0;
+    State.collection[_rc.id]++;
     this.save();
+    setTimeout(() => Game.showModal('🎁', 'Startkombination!', `Du kennst bereits:\n${_rc.emoji} <b>${_rc.name}</b>\n\n${_rc.desc}\n\n⚔ ATK: ${_rc.atk} · 🛡 DEF: ${_rc.def}\n\nEntdecke weitere Kombinationen im Labor!`, 'Los gehts!', null, () => {}), 700);
     showScreen('screen-map');
     UI.renderMap();
     UI.updateHud();
   },
   save() {
-    const data = { player: State.player, deck: State.deck, collection: State.collection, discoveredCombos: State.discoveredCombos, defeatedEnemies: State.defeatedEnemies };
+    const data = { player: State.player, deck: State.deck, collection: State.collection, discoveredCombos: State.discoveredCombos, researchQueue: State.researchQueue, defeatedEnemies: State.defeatedEnemies };
     localStorage.setItem('arcane_forge_save', JSON.stringify(data));
     this.saveToCloud();
     UI.showToast('💾 Gespeichert!');
   },
   async saveToCloud() {
     if (!Auth.user) return;
-    const data = { player: State.player, deck: State.deck, collection: State.collection, discoveredCombos: State.discoveredCombos, defeatedEnemies: State.defeatedEnemies };
+    const data = { player: State.player, deck: State.deck, collection: State.collection, discoveredCombos: State.discoveredCombos, researchQueue: State.researchQueue, defeatedEnemies: State.defeatedEnemies };
     try { await _supa.from('game_saves').upsert({ user_id: Auth.user.id, save_data: data }); } catch(e) {}
   },
   loadGame() {
@@ -842,7 +844,9 @@ const Game = {
       State.deck = s.deck || [];
       State.collection = s.collection || {};
       State.discoveredCombos = s.discoveredCombos || [];
+      State.researchQueue = s.researchQueue || [];
       State.defeatedEnemies = s.defeatedEnemies || [];
+      if (State.researchQueue.length > 0) setTimeout(() => Lab._startTimer(), 100);
       showScreen('screen-map');
       UI.renderMap();
       UI.updateHud();
@@ -1087,127 +1091,89 @@ const UI = {
   },
 
   renderCombo() {
+    Lab.checkResearch();
     document.getElementById('combo-count').textContent = State.discoveredCombos.length + ' entdeckt';
-    // Preview
-    const res = document.getElementById('combo-result-preview');
-    if (this.comboSlot1 && this.comboSlot2) {
-      const recipe = COMBO_RECIPES.find(r =>
-        (r.card1 === this.comboSlot1 && r.card2 === this.comboSlot2) ||
-        (r.card1 === this.comboSlot2 && r.card2 === this.comboSlot1)
-      );
-      if (recipe) {
-        const known = State.discoveredCombos.includes(recipe.id);
-        res.innerHTML = `
-          <div class="combo-result-label">Ergebnis</div>
-          <div class="combo-result-emoji">${recipe.emoji}</div>
-          <div class="combo-result-name">${recipe.name}</div>
-          <div class="combo-result-stats atk-color">⚔${recipe.atk} <span class="def-color">🛡${recipe.def}</span></div>
-          ${known ? '<div style="font-size:10px;color:var(--green)">✓ Bekannt</div>' : ''}`;
-        res.className = 'combo-result animate-combo';
-        document.getElementById('combo-forge-btn').disabled = false;
-      } else {
-        res.innerHTML = '<div class="combo-result-label">Keine Kombination</div><div class="combo-result-emoji">💥</div>';
-        res.className = 'combo-result';
-        document.getElementById('combo-forge-btn').disabled = true;
-      }
-    } else {
-      res.innerHTML = '<div class="combo-result-label">Ergebnis</div><div class="combo-result-emoji">🔮</div><div class="combo-result-name">?</div>';
-      res.className = 'combo-result combo-result-unknown';
-      document.getElementById('combo-forge-btn').disabled = true;
-    }
-    // Slots
-    const s1 = document.getElementById('combo-slot-1');
-    const s2 = document.getElementById('combo-slot-2');
-    if (this.comboSlot1) {
-      const c = getCard(this.comboSlot1);
-      s1.innerHTML = c ? `<div style="font-size:30px">${c.emoji}</div><div style="font-size:11px;color:var(--text)">${c.name}</div>` : '?';
-      s1.className = 'combo-slot filled';
-    } else {
-      s1.innerHTML = '<span style="font-size:24px">?</span><span>Karte 1</span>';
-      s1.className = 'combo-slot';
-      s1.onclick = () => UI.openComboCardPick(1);
-    }
-    if (this.comboSlot2) {
-      const c = getCard(this.comboSlot2);
-      s2.innerHTML = c ? `<div style="font-size:30px">${c.emoji}</div><div style="font-size:11px;color:var(--text)">${c.name}</div>` : '?';
-      s2.className = 'combo-slot filled';
-    } else {
-      s2.innerHTML = '<span style="font-size:24px">?</span><span>Karte 2</span>';
-      s2.className = 'combo-slot';
-      s2.onclick = () => UI.openComboCardPick(2);
-    }
-    // Discovered list
-    const list = document.getElementById('combo-discovered-list');
-    list.innerHTML = '';
-    if (State.discoveredCombos.length === 0) {
-      list.innerHTML = '<div class="empty-state">Noch keine Kombinationen entdeckt. Experimentiere im Labor!</div>';
-    }
-    State.discoveredCombos.forEach(id => {
-      const r = COMBO_RECIPES.find(c => c.id === id);
-      if (!r) return;
-      const c1 = getCard(r.card1), c2 = getCard(r.card2);
-      const div = document.createElement('div');
-      div.className = 'combo-disc-item';
-      div.innerHTML = `
-        <div class="combo-disc-emoji">${r.emoji}</div>
-        <div class="combo-disc-info">
-          <div class="combo-disc-name">${r.name} <span class="atk-color">⚔${r.atk}</span> <span class="def-color">🛡${r.def}</span></div>
-          <div class="combo-disc-recipe">${c1 ? c1.emoji+' '+c1.name : '?'} + ${c2 ? c2.emoji+' '+c2.name : '?'}</div>
-        </div>
-        <div style="font-size:10px;color:${rarityColor(r.rarity)}">${(RARITY[r.rarity]||RARITY.common).label}</div>`;
-      div.onclick = () => { const card = getCard(id); if (card) UI.showCardDetail(card); };
-      list.appendChild(div);
-    });
-  },
+    const area = document.getElementById('combo-area');
+    const known = State.discoveredCombos;
+    const queue = State.researchQueue;
+    const queueIds = queue.map(r => r.id);
+    let html = '';
 
-  openComboCardPick(slot) {
-    this.cardPickMode = 'combo_' + slot;
-    document.getElementById('cardpick-title').textContent = slot === 1 ? 'Erste Karte' : 'Zweite Karte';
-    const grid = document.getElementById('cardpick-grid');
-    grid.innerHTML = '';
-    const available = [];
-    Object.keys(State.collection).forEach(id => {
-      if (State.collection[id] > 0) {
-        const c = getCard(id);
-        if (c && !c.isEndform) available.push(c);
-      }
-    });
-    available.forEach(c => {
-      const div = this._buildCollCard(c, State.collection[c.id]);
-      div.onclick = () => {
-        if (slot === 1) UI.comboSlot1 = c.id;
-        else UI.comboSlot2 = c.id;
-        UI.closeCardPick();
-        UI.renderCombo();
-      };
-      grid.appendChild(div);
-    });
-    document.getElementById('overlay-cardpick').classList.add('visible');
+    // In research
+    const active = queue.filter(r => !known.includes(r.id));
+    if (active.length > 0) {
+      html += '<div class="section-label" style="margin-bottom:8px;padding:0 2px">⏳ In Erforschung</div>';
+      active.forEach(r => {
+        const rec = COMBO_RECIPES.find(c => c.id === r.id);
+        if (!rec) return;
+        const elapsed = Date.now() - r.startTime;
+        const remaining = Math.max(0, 1800000 - elapsed);
+        const m = Math.floor(remaining / 60000);
+        const s = Math.floor((remaining % 60000) / 1000);
+        html += `<div class="research-item researching">
+          <div style="font-size:26px">${rec.emoji}</div>
+          <div class="research-info">
+            <div style="font-size:13px;font-weight:700">${rec.name}</div>
+            <div style="font-size:11px;color:var(--text3)">⏱ Fertig in...</div>
+          </div>
+          <div class="research-timer" id="rtimer-${rec.id}">${m}:${String(s).padStart(2,'0')}</div>
+        </div>`;
+      });
+      html += '<div class="separator" style="margin:10px 0"></div>';
+    }
+
+    // Known combos
+    if (known.length > 0) {
+      html += '<div class="section-label" style="margin-bottom:8px;padding:0 2px">✓ Bekannte Kombinationen</div>';
+      known.forEach(id => {
+        const rec = COMBO_RECIPES.find(c => c.id === id);
+        if (!rec) return;
+        const c1 = getCard(rec.card1), c2 = getCard(rec.card2);
+        const inColl = State.collection[id] || 0;
+        html += `<div class="research-item known">
+          <div style="font-size:26px;cursor:pointer" onclick="UI.showCardDetail(getCard('${id}'))">${rec.emoji}</div>
+          <div class="research-info" style="cursor:pointer" onclick="UI.showCardDetail(getCard('${id}'))">
+            <div style="font-size:13px;font-weight:700">${rec.name} <span style="font-size:10px;color:${rarityColor(rec.rarity)}">${(RARITY[rec.rarity]||RARITY.common).label}</span></div>
+            <div style="font-size:11px;color:var(--text3)">${c1?.emoji||'?'} + ${c2?.emoji||'?'} · <span class="atk-color">⚔${rec.atk}</span> <span class="def-color">🛡${rec.def}</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+            ${inColl > 0 ? `<span style="font-size:10px;color:var(--text3)">x${inColl}</span>` : ''}
+            <button class="research-btn forge" onclick="Lab.forge('${id}')">⚗ Herstellen</button>
+          </div>
+        </div>`;
+      });
+      html += '<div class="separator" style="margin:10px 0"></div>';
+    }
+
+    // Researchable
+    const researchable = COMBO_RECIPES.filter(r => !known.includes(r.id) && !queueIds.includes(r.id));
+    if (researchable.length > 0) {
+      html += '<div class="section-label" style="margin-bottom:8px;padding:0 2px">🔬 Erforschen (30 min)</div>';
+      researchable.forEach(rec => {
+        const c1 = getCard(rec.card1), c2 = getCard(rec.card2);
+        const hasC1 = (State.collection[rec.card1] || 0) > 0;
+        const hasC2 = (State.collection[rec.card2] || 0) > 0;
+        const canResearch = hasC1 && hasC2;
+        html += `<div class="research-item${canResearch ? '' : ' locked'}">
+          <div style="font-size:26px">${canResearch ? rec.emoji : '🔒'}</div>
+          <div class="research-info">
+            <div style="font-size:13px;font-weight:700">${canResearch ? rec.name : '???'}</div>
+            <div style="font-size:11px;color:var(--text3)">
+              ${c1?.emoji||'?'} <span style="color:${hasC1?'var(--green)':'var(--red)'};">${hasC1?'✓':'✗'}</span>
+              + ${c2?.emoji||'?'} <span style="color:${hasC2?'var(--green)':'var(--red)'};">${hasC2?'✓':'✗'}</span>
+            </div>
+          </div>
+          <button class="research-btn" onclick="Lab.startResearch('${rec.id}')" ${canResearch ? '' : 'disabled'}>🔬 Start</button>
+        </div>`;
+      });
+    }
+
+    area.innerHTML = html;
   },
 
   closeCardPick() {
     document.getElementById('overlay-cardpick').classList.remove('visible');
     this.cardPickMode = null;
-  },
-
-  forgeCombo() {
-    if (!this.comboSlot1 || !this.comboSlot2) return;
-    const recipe = COMBO_RECIPES.find(r =>
-      (r.card1 === this.comboSlot1 && r.card2 === this.comboSlot2) ||
-      (r.card1 === this.comboSlot2 && r.card2 === this.comboSlot1)
-    );
-    if (!recipe) return;
-    if (!State.discoveredCombos.includes(recipe.id)) {
-      State.discoveredCombos.push(recipe.id);
-      Game.addCard(recipe.id);
-      Game.showModal('⚗', 'Neue Kombination!', `${recipe.emoji} <b>${recipe.name}</b> wurde entdeckt!\n${recipe.desc}\n\n⚔ ATK: ${recipe.atk} · 🛡 DEF: ${recipe.def}\n\n<i>${recipe.ability}</i>`, 'Fantastisch!', null, () => {});
-    } else {
-      Game.addCard(recipe.id);
-      UI.showToast(`${recipe.emoji} ${recipe.name} der Sammlung hinzugefügt!`);
-    }
-    this.comboSlot1 = null; this.comboSlot2 = null;
-    UI.renderCombo();
-    Game.save();
   },
 
   showToast(msg) {
@@ -1224,6 +1190,72 @@ const UI = {
   },
 };
 
+// ===== LAB =====
+const Lab = {
+  _timerInterval: null,
+
+  startResearch(id) {
+    if (State.researchQueue.find(r => r.id === id)) return;
+    if (State.discoveredCombos.includes(id)) { UI.showToast('Bereits bekannt!'); return; }
+    State.researchQueue.push({ id, startTime: Date.now() });
+    Game.save();
+    UI.renderCombo();
+    const rec = COMBO_RECIPES.find(r => r.id === id);
+    UI.showToast(`🔬 ${rec ? rec.name : ''} – Erforschung gestartet!`);
+    this._startTimer();
+  },
+
+  forge(id) {
+    if (!State.discoveredCombos.includes(id)) return;
+    const rec = COMBO_RECIPES.find(r => r.id === id);
+    if (!rec) return;
+    Game.addCard(id);
+    UI.showToast(`${rec.emoji} ${rec.name} hergestellt!`);
+    Game.save();
+    UI.renderCombo();
+  },
+
+  checkResearch() {
+    let changed = false;
+    State.researchQueue = State.researchQueue.filter(r => {
+      if (Date.now() - r.startTime >= 1800000) {
+        if (!State.discoveredCombos.includes(r.id)) {
+          State.discoveredCombos.push(r.id);
+          Game.addCard(r.id);
+          const rec = COMBO_RECIPES.find(c => c.id === r.id);
+          if (rec) setTimeout(() => Game.showModal('⚗', 'Forschung abgeschlossen!',
+            `${rec.emoji} <b>${rec.name}</b> wurde erforscht!\n${rec.desc}\n\n⚔ ATK: ${rec.atk} · 🛡 DEF: ${rec.def}`,
+            'Fantastisch!', null, () => {}), 100);
+          changed = true;
+        }
+        return false;
+      }
+      return true;
+    });
+    if (changed) Game.save();
+  },
+
+  _startTimer() {
+    if (this._timerInterval) return;
+    this._timerInterval = setInterval(() => {
+      this.checkResearch();
+      State.researchQueue.forEach(r => {
+        const el = document.getElementById('rtimer-' + r.id);
+        if (el) {
+          const rem = Math.max(0, 1800000 - (Date.now() - r.startTime));
+          const m = Math.floor(rem / 60000);
+          const s = Math.floor((rem % 60000) / 1000);
+          el.textContent = m + ':' + String(s).padStart(2, '0');
+        }
+      });
+      if (State.researchQueue.length === 0) {
+        clearInterval(this._timerInterval);
+        this._timerInterval = null;
+      }
+    }, 1000);
+  },
+};
+
 // ===== BATTLE ENGINE =====
 const Battle = {
   playerHp: 30, enemyHp: 30, playerMaxHp: 30, enemyMaxHp: 30,
@@ -1235,6 +1267,8 @@ const Battle = {
   combo1Idx: -1, combo2Idx: -1,
   comboMode: false,
   attackMode: false,
+  selectAttackerMode: false,
+  selectedAttackerIdx: -1,
   gameOver: false,
   cardPlayedThisTurn: false,
   enemy: null,
@@ -1257,6 +1291,7 @@ const Battle = {
     this.turn = 1; this.phase = 'player';
     this.selectedHandIdx = -1; this.combo1Idx = -1; this.combo2Idx = -1;
     this.comboMode = false; this.attackMode = false;
+    this.selectAttackerMode = false; this.selectedAttackerIdx = -1;
     this.gameOver = false; this.cardPlayedThisTurn = false;
     for (let i = 0; i < 4; i++) this._drawCard('player');
     for (let i = 0; i < 3; i++) this._drawCard('enemy');
@@ -1293,10 +1328,13 @@ const Battle = {
     this._renderHand();
     this._renderComboHints();
     const active = isPlayer && !this.gameOver;
-    document.getElementById('btn-play').disabled = !(active && !this.cardPlayedThisTurn && this.selectedHandIdx >= 0);
-    document.getElementById('btn-combo').disabled = !(active && !this.cardPlayedThisTurn && this.playerHand.length >= 2);
-    document.getElementById('btn-attack').disabled = !(active && !this.attackMode && this.playerField.length > 0 && this.turn > 1);
-    document.getElementById('btn-endturn').disabled = !active;
+    const unattacked = this.playerField.filter(c => !c.hasAttacked).length;
+    document.getElementById('btn-play').disabled = !(active && !this.cardPlayedThisTurn && this.selectedHandIdx >= 0 && !this.selectAttackerMode && !this.attackMode);
+    document.getElementById('btn-combo').disabled = !(active && !this.cardPlayedThisTurn && this.playerHand.length >= 2 && !this.selectAttackerMode && !this.attackMode);
+    const btnAtk = document.getElementById('btn-attack');
+    btnAtk.disabled = !(active && unattacked > 0 && this.turn > 1 && !this.attackMode);
+    btnAtk.textContent = this.selectAttackerMode ? '✕ Abbrechen' : (active && unattacked > 0 && this.turn > 1 ? `⚔ Angreifen (${unattacked})` : '⚔ Angreifen');
+    document.getElementById('btn-endturn').disabled = !active || this.selectAttackerMode || this.attackMode;
   },
 
   _renderComboHints() {
@@ -1309,11 +1347,10 @@ const Battle = {
       for (let b = a + 1; b < baseCards.length; b++) {
         const ia = baseCards[a].id, ib = baseCards[b].id;
         const recipe = COMBO_RECIPES.find(r => (r.card1===ia&&r.card2===ib)||(r.card1===ib&&r.card2===ia));
-        if (recipe && !seen.has(recipe.id)) {
+        if (recipe && !seen.has(recipe.id) && State.discoveredCombos.includes(recipe.id)) {
           seen.add(recipe.id);
           const ca = getCard(ia), cb = getCard(ib);
-          const known = State.discoveredCombos.includes(recipe.id);
-          hints.push(`<span class="combo-hint-item">${ca.emoji}+${cb.emoji}=<span class="combo-hint-result">${known ? recipe.emoji+' '+recipe.name : '???'}</span></span>`);
+          hints.push(`<span class="combo-hint-item">${ca.emoji}+${cb.emoji}=<span class="combo-hint-result">${recipe.emoji} ${recipe.name}</span></span>`);
         }
       }
     }
@@ -1329,19 +1366,25 @@ const Battle = {
     for (let i = 0; i < maxSlots; i++) {
       const slot = document.createElement('div');
       if (field[i]) {
-        slot.className = 'field-slot occupied' + (isEnemy && this.attackMode ? ' target' : '') + (isEnemy ? ' enemy-slot' : '');
         const c = field[i];
-        slot.innerHTML = `<div class="mini-card">
+        const isTarget = isEnemy && this.attackMode;
+        const isSelectable = !isEnemy && this.selectAttackerMode && !c.hasAttacked;
+        let cls = 'field-slot occupied';
+        if (isEnemy) cls += ' enemy-slot';
+        if (isTarget) cls += ' target';
+        if (isSelectable) cls += ' selectable-attacker';
+        slot.className = cls;
+        const attackedCls = (!isEnemy && c.hasAttacked) ? ' attacked' : '';
+        slot.innerHTML = `<div class="mini-card${attackedCls}">
           <div class="mini-card-emoji">${c.emoji}</div>
           <div class="mini-card-name">${c.name.length > 12 ? c.name.substring(0,11)+'…' : c.name}</div>
           <div class="mini-card-stats"><span class="mini-atk">⚔${c.atk}</span><span class="mini-def">🛡${c.def}</span></div>
+          ${!isEnemy && c.hasAttacked ? '<div style="font-size:8px;color:var(--text3);">✓ angegl.</div>' : ''}
         </div>`;
-        if (isEnemy && this.attackMode) {
-          const idx = i;
-          slot.onclick = () => Battle._executeAttack(idx);
-        }
+        if (isTarget) { const idx = i; slot.onclick = () => Battle._executeAttack(idx); }
+        else if (isSelectable) { const idx = i; slot.onclick = () => Battle._selectAttacker(idx); }
       } else {
-        slot.className = 'field-slot' + (!isEnemy && this.attackMode ? '' : '');
+        slot.className = 'field-slot';
         slot.innerHTML = '<span style="font-size:11px;color:var(--text3)">·</span>';
       }
       el.appendChild(slot);
@@ -1400,7 +1443,7 @@ const Battle = {
     if (this.playerField.length >= 4) { this._log('Feld ist voll! Max 4 Karten.'); return; }
     const id = this.playerHand.splice(this.selectedHandIdx, 1)[0];
     const c = getCard(id);
-    this.playerField.push({ ...c, id });
+    this.playerField.push({ ...c, id, hasAttacked: false });
     this.selectedHandIdx = -1;
     this.cardPlayedThisTurn = true;
     this._log(`Du spielst ${c.emoji} ${c.name}. (⚔${c.atk} 🛡${c.def})`);
@@ -1435,35 +1478,51 @@ const Battle = {
       this.combo1Idx = -1; this.combo2Idx = -1;
       this._render(); return;
     }
+    if (!State.discoveredCombos.includes(recipe.id)) {
+      this._log(`🔒 ${recipe.name} noch nicht erforscht! Gehe ins Labor.`);
+      this.combo1Idx = -1; this.combo2Idx = -1;
+      this._render(); return;
+    }
     const idxs = [this.combo1Idx, this.combo2Idx].sort((a,b) => b - a);
     idxs.forEach(i => this.playerHand.splice(i, 1));
     this.combo1Idx = -1; this.combo2Idx = -1;
     this.cardPlayedThisTurn = true;
-    const result = { ...recipe, id: recipe.id, isEndform: true };
+    const result = { ...recipe, id: recipe.id, isEndform: true, hasAttacked: false };
     if (this.playerField.length < 4) {
       this.playerField.push(result);
       this._log(`✨ ${c1.emoji}${c1.name} + ${c2.emoji}${c2.name} = ${recipe.emoji} ${recipe.name}! (⚔${recipe.atk} 🛡${recipe.def})`);
-      if (!State.discoveredCombos.includes(recipe.id)) {
-        State.discoveredCombos.push(recipe.id);
-        Game.addCard(recipe.id);
-        setTimeout(() => { Game.showModal('⚗', 'Neue Kombination!', `${recipe.emoji} <b>${recipe.name}</b> wurde entdeckt!\n${recipe.desc}\n\n⚔ ATK: ${recipe.atk} · 🛡 DEF: ${recipe.def}\n\n${recipe.ability}`, 'Toll!', null, () => {}); }, 400);
-      }
     } else { this._log('Feld voll – Kombination geht in die Hand.'); this.playerHand.push(recipe.id); }
     this._render();
   },
 
   attack() {
     if (this.phase !== 'player' || this.gameOver || this.attackMode) return;
+    if (this.selectAttackerMode) {
+      this.selectAttackerMode = false;
+      this._render(); return;
+    }
     if (this.turn === 1) { this._log('⛔ In Runde 1 darf nicht angegriffen werden!'); return; }
-    if (this.playerField.length === 0) { this._log('Keine Karten auf dem Feld!'); return; }
+    const unattacked = this.playerField.filter(c => !c.hasAttacked);
+    if (unattacked.length === 0) { this._log('Alle Karten haben bereits angegriffen!'); return; }
+    this.selectAttackerMode = true;
+    this._log('Wähle eine deiner Karten zum Angreifen...');
+    this._render();
+  },
+
+  _selectAttacker(attackerIdx) {
+    if (!this.selectAttackerMode) return;
+    const attacker = this.playerField[attackerIdx];
+    if (!attacker || attacker.hasAttacked) return;
+    this.selectAttackerMode = false;
+    this.selectedAttackerIdx = attackerIdx;
     if (this.enemyField.length > 0) {
       this.attackMode = true;
-      this._log('Wähle eine feindliche Karte zum Angreifen...');
+      this._log(`${attacker.emoji} ${attacker.name} greift an – wähle ein Ziel...`);
       this._render();
     } else {
-      const att = this.playerField.reduce((b, c) => c.atk > b.atk ? c : b, this.playerField[0]);
-      this.enemyHp = Math.max(0, this.enemyHp - att.atk);
-      this._log(`⚔ ${att.emoji} ${att.name} greift ${this.enemy.name} direkt an! -${att.atk} LP`);
+      attacker.hasAttacked = true;
+      this.enemyHp = Math.max(0, this.enemyHp - attacker.atk);
+      this._log(`⚔ ${attacker.emoji} ${attacker.name} greift ${this.enemy.name} direkt an! -${attacker.atk} LP`);
       this._render();
       this._checkWin();
     }
@@ -1472,9 +1531,12 @@ const Battle = {
   _executeAttack(enemyIdx) {
     if (!this.attackMode) return;
     this.attackMode = false;
-    const attackerIdx = this.playerField.reduce((bi, c, i) => c.atk > this.playerField[bi].atk ? i : bi, 0);
+    const attackerIdx = this.selectedAttackerIdx;
     const attacker = this.playerField[attackerIdx];
+    if (!attacker) { this._render(); return; }
     const target = this.enemyField[enemyIdx];
+    if (!target) { this._render(); return; }
+    attacker.hasAttacked = true;
     const msgs = [`⚔ ${attacker.emoji}${attacker.name} vs ${target.emoji}${target.name}:`];
 
     const newTargetDef = target.def - attacker.atk;
@@ -1511,7 +1573,8 @@ const Battle = {
 
   endTurn() {
     if (this.phase !== 'player' || this.gameOver) return;
-    this.attackMode = false; this.comboMode = false; this.selectedHandIdx = -1;
+    this.attackMode = false; this.selectAttackerMode = false; this.selectedAttackerIdx = -1;
+    this.comboMode = false; this.selectedHandIdx = -1;
     this.phase = 'enemy';
     this._drawCard('player');
     this._log('Dein Zug endet. Gegner ist dran...');
@@ -1521,68 +1584,80 @@ const Battle = {
 
   _enemyTurn() {
     if (this.phase !== 'enemy') return;
-    // Enemy draws
     this._drawCard('enemy');
-    // Enemy plays a card if possible
+    // Smart card play: pick highest ATK+DEF card
     if (this.enemyHand.length > 0 && this.enemyField.length < 4) {
-      const idxToPlay = Math.floor(Math.random() * this.enemyHand.length);
-      const id = this.enemyHand.splice(idxToPlay, 1)[0];
+      let bestIdx = 0, bestScore = -1;
+      this.enemyHand.forEach((id, i) => {
+        const c = getCard(id);
+        if (c && c.atk * 1.4 + c.def > bestScore) { bestScore = c.atk * 1.4 + c.def; bestIdx = i; }
+      });
+      const id = this.enemyHand.splice(bestIdx, 1)[0];
       const c = getCard(id);
-      if (c) { this.enemyField.push({ ...c, id }); this._log(`👺 ${this.enemy.name} spielt ${c.emoji} ${c.name}.`); }
+      if (c) { this.enemyField.push({ ...c, id, hasAttacked: false }); this._log(`👺 ${this.enemy.name} spielt ${c.emoji} ${c.name}. (⚔${c.atk} 🛡${c.def})`); }
     }
-    // Enemy attacks
+    this.enemyField.forEach(c => c.hasAttacked = false);
     setTimeout(() => {
       if (this.gameOver) return;
-      if (this.enemyField.length > 0 && this.turn > 1) {
-        const attackerIdx = Math.floor(Math.random() * this.enemyField.length);
-        const attacker = this.enemyField[attackerIdx];
-        if (this.playerField.length > 0) {
-          const targetIdx = Math.floor(Math.random() * this.playerField.length);
-          const target = this.playerField[targetIdx];
-          const msgs = [`💢 ${attacker.emoji}${attacker.name} vs ${target.emoji}${target.name}:`];
-
-          const newTargetDef = target.def - attacker.atk;
-          const newAttackerDef = attacker.def - target.atk;
-          let targetDestroyed = false, attackerDestroyed = false;
-
-          if (newTargetDef <= 0) {
-            targetDestroyed = true;
-            const lp = -newTargetDef;
-            this.playerHp = Math.max(0, this.playerHp - lp);
-            msgs.push(`💀${target.emoji} zerstört!${lp > 0 ? ` Du -${lp}LP` : ''}`);
-          } else {
-            target.def = newTargetDef;
-            msgs.push(`${target.emoji} überlebt (DEF→${newTargetDef})`);
-          }
-
-          if (newAttackerDef <= 0) {
-            attackerDestroyed = true;
-            const lp = -newAttackerDef;
-            this.enemyHp = Math.max(0, this.enemyHp - lp);
-            msgs.push(`💀${attacker.emoji} zerstört!${lp > 0 ? ` Gegner -${lp}LP` : ''}`);
-          } else {
-            attacker.def = newAttackerDef;
-            msgs.push(`${attacker.emoji} überlebt (DEF→${newAttackerDef})`);
-          }
-
-          if (targetDestroyed) this.playerField.splice(targetIdx, 1);
-          if (attackerDestroyed) this.enemyField.splice(attackerIdx, 1);
-
-          this._log(msgs.join(' '));
-        } else {
-          this.playerHp = Math.max(0, this.playerHp - attacker.atk);
-          this._log(`💢 ${attacker.emoji} greift dich direkt an! -${attacker.atk} LP`);
-        }
-      } else if (this.turn === 1) {
-        this._log(`${this.enemy.name} baut seine Verteidigung auf.`);
-      }
-      this.turn++;
-      this.phase = 'player';
-      this.cardPlayedThisTurn = false;
-      this.selectedHandIdx = -1;
-      this._render();
-      if (!this._checkLoss()) this._log(`Zug ${this.turn} – dein Zug!`);
+      if (this.turn > 1) this._executeEnemyAttacks();
+      else { this._log(`${this.enemy.name} baut seine Verteidigung auf.`); this._finishEnemyTurn(); }
     }, 700);
+  },
+
+  _executeEnemyAttacks() {
+    if (this.gameOver) return;
+    const attackerIdx = this.enemyField.findIndex(c => !c.hasAttacked);
+    if (attackerIdx < 0) { this._finishEnemyTurn(); return; }
+    const attacker = this.enemyField[attackerIdx];
+    attacker.hasAttacked = true;
+    if (this.playerField.length === 0) {
+      this.playerHp = Math.max(0, this.playerHp - attacker.atk);
+      this._log(`💢 ${attacker.emoji} greift dich direkt an! -${attacker.atk} LP`);
+      this._render();
+      if (this._checkLoss()) return;
+      setTimeout(() => this._executeEnemyAttacks(), 600);
+      return;
+    }
+    const targetIdx = this._smartEnemyTarget(attacker);
+    const target = this.playerField[targetIdx];
+    const msgs = [`💢 ${attacker.emoji}${attacker.name} → ${target.emoji}${target.name}:`];
+    const newTDef = target.def - attacker.atk, newADef = attacker.def - target.atk;
+    let tDead = false, aDead = false;
+    if (newTDef <= 0) { tDead = true; const lp = -newTDef; this.playerHp = Math.max(0, this.playerHp - lp); msgs.push(`💀${target.emoji}${lp>0?` Du -${lp}LP`:''}`); }
+    else { target.def = newTDef; msgs.push(`${target.emoji} DEF→${newTDef}`); }
+    if (newADef <= 0) { aDead = true; const lp = -newADef; this.enemyHp = Math.max(0, this.enemyHp - lp); msgs.push(`💀${attacker.emoji}${lp>0?` Gegner -${lp}LP`:''}`); }
+    else { attacker.def = newADef; msgs.push(`${attacker.emoji} DEF→${newADef}`); }
+    if (tDead) this.playerField.splice(targetIdx, 1);
+    if (aDead) this.enemyField.splice(attackerIdx, 1);
+    this._log(msgs.join(' '));
+    this._render();
+    if (this._checkLoss() || this._checkWin()) return;
+    setTimeout(() => this._executeEnemyAttacks(), 650);
+  },
+
+  _smartEnemyTarget(attacker) {
+    let bestIdx = 0, bestScore = -Infinity;
+    this.playerField.forEach((target, i) => {
+      const newTDef = target.def - attacker.atk, newADef = attacker.def - target.atk;
+      const destroys = newTDef <= 0, survives = newADef > 0;
+      let score = 0;
+      if (destroys && survives) score = 100 + (-newTDef) + target.atk;
+      else if (destroys && !survives) score = 50 + target.atk;
+      else if (!destroys && survives) score = 15 + target.atk * 2;
+      else score = -10 + target.atk * 3;
+      if (score > bestScore) { bestScore = score; bestIdx = i; }
+    });
+    return bestIdx;
+  },
+
+  _finishEnemyTurn() {
+    this.turn++;
+    this.phase = 'player';
+    this.cardPlayedThisTurn = false;
+    this.selectedHandIdx = -1;
+    this.playerField.forEach(c => c.hasAttacked = false);
+    this._render();
+    if (!this._checkLoss()) this._log(`Zug ${this.turn} – dein Zug!`);
   },
 
   _checkWin() {
@@ -1693,8 +1768,12 @@ const Auth = {
     State.player.gold = 0; State.player.wins = 0;
     State.deck = ['feuer','wasser','feuer','wasser','eis','ritter','troll','gnom','licht','schatten'];
     State.collection = { feuer:3, wasser:3, eis:2, ritter:2, gnom:2, troll:1, licht:1, schatten:1, elfe:1, flug:1 };
-    State.discoveredCombos = [];
+    const _rc2 = COMBO_RECIPES[Math.floor(Math.random() * COMBO_RECIPES.length)];
+    State.discoveredCombos = [_rc2.id];
+    State.researchQueue = [];
     State.defeatedEnemies = [];
+    if (!State.collection[_rc2.id]) State.collection[_rc2.id] = 0;
+    State.collection[_rc2.id]++;
     await Game.saveToCloud();
     try { await _supa.from('profiles').upsert({ id: this.user.id, username: name }); } catch(e) {}
     errEl.textContent = '';
@@ -1723,7 +1802,9 @@ const Auth = {
         State.deck = s.deck || [];
         State.collection = s.collection || {};
         State.discoveredCombos = s.discoveredCombos || [];
+        State.researchQueue = s.researchQueue || [];
         State.defeatedEnemies = s.defeatedEnemies || [];
+        if (State.researchQueue.length > 0) setTimeout(() => Lab._startTimer(), 200);
       }
     } catch(e) {}
   }
