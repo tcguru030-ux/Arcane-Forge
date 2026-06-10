@@ -1632,12 +1632,17 @@ const Battle = {
 // ===== SUPABASE =====
 const SUPA_URL = 'https://ebpndnpiuummplxyhqai.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVicG5kbnBpdXVtbXBseHlocWFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwODgxOTQsImV4cCI6MjA5NjY2NDE5NH0.hCBMVB3AXnDw3LauEOApXJqPfFz95v9sC0ZHWt6OQiI';
-const _supa = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+let _supa = null;
+try {
+  const _sb = window.supabase || window['@supabase/supabase-js'];
+  if (_sb && _sb.createClient) _supa = _sb.createClient(SUPA_URL, SUPA_KEY);
+} catch(e) { console.warn('Supabase init failed:', e); }
 
 const Auth = {
   user: null,
 
   async init() {
+    if (!_supa) { showScreen('screen-login'); return; }
     try {
       const { data: { session } } = await _supa.auth.getSession();
       if (session) {
@@ -1658,6 +1663,7 @@ const Auth = {
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
     const errEl = document.getElementById('auth-error');
+    if (!_supa) { errEl.textContent = '⚠ Verbindung zum Server fehlgeschlagen. Seite neu laden.'; return; }
     errEl.textContent = 'Einloggen…';
     if (!email || !password) { errEl.textContent = 'Bitte E-Mail und Passwort eingeben.'; return; }
     const { data, error } = await _supa.auth.signInWithPassword({ email, password });
@@ -1725,8 +1731,8 @@ const Auth = {
 
 // ===== INIT =====
 (function init() {
-  showScreen('screen-login');
-  Auth.init();
+  showScreen('screen-login'); // immer sofort sichtbar
+  if (_supa) Auth.init();     // async session check nur wenn Supabase geladen
 })();
 </script>
 </body>
