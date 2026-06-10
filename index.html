@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Arcane Forge</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --bg: #0a0a0f;
@@ -370,10 +371,41 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 .scrollable { overflow-y: auto; }
 .separator { height: 1px; background: var(--border2); margin: 6px 0; }
 .empty-state { text-align: center; color: var(--text3); font-size: 13px; padding: 30px; }
+
+/* ---- AUTH / LOGIN ---- */
+#screen-login {
+  background: radial-gradient(ellipse at top, #1a0e35 0%, #0a0a0f 60%);
+  align-items: center; justify-content: center; gap: 0;
+}
+.auth-input {
+  width: 100%; padding: 12px 14px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: rgba(255,255,255,0.06);
+  color: var(--text); font-size: 14px; font-family: var(--font);
+  outline: none; transition: border-color 0.2s;
+}
+.auth-input:focus { border-color: var(--accent); }
+.auth-input::placeholder { color: var(--text3); }
+.auth-wrap { width: 280px; display: flex; flex-direction: column; gap: 10px; }
+.auth-error { color: #ef9a9a; font-size: 12px; text-align: center; min-height: 16px; }
 </style>
 </head>
 <body>
 <div id="app">
+
+<!-- LOGIN SCREEN -->
+<div id="screen-login" class="screen">
+  <div class="menu-glow"></div>
+  <div class="menu-title" style="margin-top:60px">ARCANE FORGE</div>
+  <div class="menu-sub" style="margin-bottom:28px">Das Sammelkartenspiel</div>
+  <div class="auth-wrap">
+    <input id="login-email" type="email" placeholder="E-Mail" class="auth-input" autocomplete="email">
+    <input id="login-password" type="password" placeholder="Passwort (mind. 6 Zeichen)" class="auth-input" autocomplete="current-password">
+    <button class="menu-btn primary" onclick="Auth.login()">🔑 Einloggen</button>
+    <button class="menu-btn" onclick="Auth.register()">✨ Registrieren</button>
+    <div id="auth-error" class="auth-error"></div>
+  </div>
+  <div class="menu-version">v3.0 – Arcane Forge by Felix Hanschke</div>
+</div>
 
 <!-- MAIN MENU -->
 <div id="screen-menu" class="screen">
@@ -570,6 +602,7 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
   </div>
   <button class="settings-save-btn" onclick="Game.save()">💾 Speichern</button>
   <button class="settings-save-btn" style="background:rgba(192,57,43,0.15);border-color:var(--red);color:#ef9a9a;margin:0 14px 14px;" onclick="Game.confirmReset()">🗑 Neustart</button>
+  <button class="settings-save-btn" style="background:rgba(41,128,185,0.15);border-color:var(--blue);color:#74b9e8;margin:0 14px 14px;" onclick="Auth.logout()">🚪 Ausloggen</button>
 </div>
 
 <!-- CARD PICK OVERLAY -->
@@ -724,7 +757,7 @@ const REGIONS = [
 
 // ===== GAME STATE =====
 const State = {
-  player: { name:'Magier', hp:30, maxHp:30, level:1, xp:0, xpNext:100, gold:0, wins:0 },
+  player: { name:'Magier', hp:100, maxHp:100, level:1, xp:0, xpNext:100, gold:0, wins:0 },
   deck: ['feuer','wasser','feuer','wasser','eis','ritter','troll','gnom','licht','schatten'],
   collection: { feuer:3, wasser:3, eis:2, ritter:2, gnom:2, troll:1, licht:1, schatten:1, elfe:1, flug:1 },
   discoveredCombos: [],
@@ -775,7 +808,7 @@ const Game = {
   newGame() {
     const name = prompt('Wie lautet dein Name, Magier?', 'Aldric') || 'Magier';
     State.player.name = name;
-    State.player.hp = 30; State.player.maxHp = 30;
+    State.player.hp = 100; State.player.maxHp = 100;
     State.player.level = 1; State.player.xp = 0; State.player.xpNext = 100;
     State.player.gold = 0; State.player.wins = 0;
     State.deck = ['feuer','wasser','feuer','wasser','eis','ritter','troll','gnom','licht','schatten'];
@@ -788,25 +821,32 @@ const Game = {
     UI.updateHud();
   },
   save() {
-    localStorage.setItem('arcane_forge_save', JSON.stringify({
-      player: State.player, deck: State.deck,
-      collection: State.collection, discoveredCombos: State.discoveredCombos,
-      defeatedEnemies: State.defeatedEnemies
-    }));
+    const data = { player: State.player, deck: State.deck, collection: State.collection, discoveredCombos: State.discoveredCombos, defeatedEnemies: State.defeatedEnemies };
+    localStorage.setItem('arcane_forge_save', JSON.stringify(data));
+    this.saveToCloud();
     UI.showToast('💾 Gespeichert!');
   },
+  async saveToCloud() {
+    if (!Auth.user) return;
+    const data = { player: State.player, deck: State.deck, collection: State.collection, discoveredCombos: State.discoveredCombos, defeatedEnemies: State.defeatedEnemies };
+    try { await _supa.from('game_saves').upsert({ user_id: Auth.user.id, save_data: data }); } catch(e) {}
+  },
   loadGame() {
-    const raw = localStorage.getItem('arcane_forge_save');
-    if (!raw) { Game.showModal('📂', 'Kein Spielstand', 'Es wurde kein Spielstand gefunden. Starte ein neues Spiel!', 'Neues Spiel', null, () => Game.newGame()); return; }
-    const s = JSON.parse(raw);
-    Object.assign(State.player, s.player || {});
-    State.deck = s.deck || [];
-    State.collection = s.collection || {};
-    State.discoveredCombos = s.discoveredCombos || [];
-    State.defeatedEnemies = s.defeatedEnemies || [];
-    showScreen('screen-map');
-    UI.renderMap();
-    UI.updateHud();
+    if (Auth.user) {
+      Auth._loadFromCloud().then(() => { showScreen('screen-map'); UI.renderMap(); UI.updateHud(); });
+    } else {
+      const raw = localStorage.getItem('arcane_forge_save');
+      if (!raw) { Game.showModal('📂', 'Kein Spielstand', 'Es wurde kein Spielstand gefunden.', 'OK', null, () => {}); return; }
+      const s = JSON.parse(raw);
+      Object.assign(State.player, s.player || {});
+      State.deck = s.deck || [];
+      State.collection = s.collection || {};
+      State.discoveredCombos = s.discoveredCombos || [];
+      State.defeatedEnemies = s.defeatedEnemies || [];
+      showScreen('screen-map');
+      UI.renderMap();
+      UI.updateHud();
+    }
   },
   confirmReset() {
     Game.showModal('⚠', 'Neustart?', 'Dein gesamter Fortschritt wird gelöscht. Bist du sicher?',
@@ -818,7 +858,7 @@ const Game = {
       State.player.xp -= State.player.xpNext;
       State.player.level++;
       State.player.xpNext = Math.floor(100 * Math.pow(1.35, State.player.level - 1));
-      State.player.maxHp = 30 + (State.player.level - 1) * 3;
+      State.player.maxHp = 100 + (State.player.level - 1) * 3;
       State.player.hp = State.player.maxHp;
       Game.showModal('🎉', 'Level Up!', `Du bist jetzt Level ${State.player.level}!\nMax HP: ${State.player.maxHp}`, 'Weiter', null, () => {});
     }
@@ -1421,9 +1461,9 @@ const Battle = {
       this._log('Wähle eine feindliche Karte zum Angreifen...');
       this._render();
     } else {
-      const atk = this.playerField[0].atk;
-      this.enemyHp = Math.max(0, this.enemyHp - atk);
-      this._log(`⚔ ${this.playerField[0].emoji} ${this.playerField[0].name} greift ${this.enemy.name} direkt an! ${atk} Schaden.`);
+      const att = this.playerField.reduce((b, c) => c.atk > b.atk ? c : b, this.playerField[0]);
+      this.enemyHp = Math.max(0, this.enemyHp - att.atk);
+      this._log(`⚔ ${att.emoji} ${att.name} greift ${this.enemy.name} direkt an! -${att.atk} LP`);
       this._render();
       this._checkWin();
     }
@@ -1432,13 +1472,39 @@ const Battle = {
   _executeAttack(enemyIdx) {
     if (!this.attackMode) return;
     this.attackMode = false;
-    const attacker = this.playerField.reduce((best, c) => c.atk > best.atk ? c : best, this.playerField[0]);
+    const attackerIdx = this.playerField.reduce((bi, c, i) => c.atk > this.playerField[bi].atk ? i : bi, 0);
+    const attacker = this.playerField[attackerIdx];
     const target = this.enemyField[enemyIdx];
-    const dmg = Math.max(0, attacker.atk - target.def);
-    const counterDmg = Math.max(0, target.atk - attacker.def);
-    if (dmg > 0) { this.enemyHp = Math.max(0, this.enemyHp - dmg); this._log(`⚔ ${attacker.emoji} ${attacker.name} greift ${target.emoji} ${target.name} an! ${dmg} Schaden.`); }
-    else this._log(`⚔ ${attacker.emoji} greift ${target.emoji} ${target.name} an – abgewehrt!`);
-    if (counterDmg > 0) { this.playerHp = Math.max(0, this.playerHp - counterDmg); this._log(`💢 ${target.emoji} kontert! ${counterDmg} Schaden an dir.`); }
+    const msgs = [`⚔ ${attacker.emoji}${attacker.name} vs ${target.emoji}${target.name}:`];
+
+    const newTargetDef = target.def - attacker.atk;
+    const newAttackerDef = attacker.def - target.atk;
+    let targetDestroyed = false, attackerDestroyed = false;
+
+    if (newTargetDef <= 0) {
+      targetDestroyed = true;
+      const lp = -newTargetDef;
+      this.enemyHp = Math.max(0, this.enemyHp - lp);
+      msgs.push(`💀${target.emoji} zerstört!${lp > 0 ? ` Gegner -${lp}LP` : ''}`);
+    } else {
+      target.def = newTargetDef;
+      msgs.push(`${target.emoji} überlebt (DEF→${newTargetDef})`);
+    }
+
+    if (newAttackerDef <= 0) {
+      attackerDestroyed = true;
+      const lp = -newAttackerDef;
+      this.playerHp = Math.max(0, this.playerHp - lp);
+      msgs.push(`💀${attacker.emoji} zerstört!${lp > 0 ? ` Du -${lp}LP` : ''}`);
+    } else {
+      attacker.def = newAttackerDef;
+      msgs.push(`${attacker.emoji} überlebt (DEF→${newAttackerDef})`);
+    }
+
+    if (targetDestroyed) this.enemyField.splice(enemyIdx, 1);
+    if (attackerDestroyed) this.playerField.splice(attackerIdx, 1);
+
+    this._log(msgs.join(' '));
     this._render();
     if (!this._checkWin()) this._checkLoss();
   },
@@ -1468,19 +1534,44 @@ const Battle = {
     setTimeout(() => {
       if (this.gameOver) return;
       if (this.enemyField.length > 0 && this.turn > 1) {
-        const attacker = this.enemyField[Math.floor(Math.random() * this.enemyField.length)];
+        const attackerIdx = Math.floor(Math.random() * this.enemyField.length);
+        const attacker = this.enemyField[attackerIdx];
         if (this.playerField.length > 0) {
           const targetIdx = Math.floor(Math.random() * this.playerField.length);
           const target = this.playerField[targetIdx];
-          const dmg = Math.max(0, attacker.atk - target.def);
-          const counterDmg = Math.max(0, target.atk - attacker.def);
-          if (dmg > 0) { this.playerHp = Math.max(0, this.playerHp - dmg); this._log(`💢 ${attacker.emoji} greift ${target.emoji} ${target.name} an! ${dmg} Schaden.`); }
-          else this._log(`💢 ${attacker.emoji} greift ${target.emoji} ${target.name} an – abgewehrt!`);
-          if (counterDmg > 0) { this.enemyHp = Math.max(0, this.enemyHp - counterDmg); }
+          const msgs = [`💢 ${attacker.emoji}${attacker.name} vs ${target.emoji}${target.name}:`];
+
+          const newTargetDef = target.def - attacker.atk;
+          const newAttackerDef = attacker.def - target.atk;
+          let targetDestroyed = false, attackerDestroyed = false;
+
+          if (newTargetDef <= 0) {
+            targetDestroyed = true;
+            const lp = -newTargetDef;
+            this.playerHp = Math.max(0, this.playerHp - lp);
+            msgs.push(`💀${target.emoji} zerstört!${lp > 0 ? ` Du -${lp}LP` : ''}`);
+          } else {
+            target.def = newTargetDef;
+            msgs.push(`${target.emoji} überlebt (DEF→${newTargetDef})`);
+          }
+
+          if (newAttackerDef <= 0) {
+            attackerDestroyed = true;
+            const lp = -newAttackerDef;
+            this.enemyHp = Math.max(0, this.enemyHp - lp);
+            msgs.push(`💀${attacker.emoji} zerstört!${lp > 0 ? ` Gegner -${lp}LP` : ''}`);
+          } else {
+            attacker.def = newAttackerDef;
+            msgs.push(`${attacker.emoji} überlebt (DEF→${newAttackerDef})`);
+          }
+
+          if (targetDestroyed) this.playerField.splice(targetIdx, 1);
+          if (attackerDestroyed) this.enemyField.splice(attackerIdx, 1);
+
+          this._log(msgs.join(' '));
         } else {
-          const dmg = attacker.atk;
-          this.playerHp = Math.max(0, this.playerHp - dmg);
-          this._log(`💢 ${attacker.emoji} greift dich direkt an! ${dmg} Schaden.`);
+          this.playerHp = Math.max(0, this.playerHp - attacker.atk);
+          this._log(`💢 ${attacker.emoji} greift dich direkt an! -${attacker.atk} LP`);
         }
       } else if (this.turn === 1) {
         this._log(`${this.enemy.name} baut seine Verteidigung auf.`);
@@ -1538,22 +1629,104 @@ const Battle = {
   },
 };
 
-// ===== INIT =====
-(function init() {
-  const saved = localStorage.getItem('arcane_forge_save');
-  if (saved) {
+// ===== SUPABASE =====
+const SUPA_URL = 'https://ebpndnpiuummplxyhqai.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVicG5kbnBpdXVtbXBseHlocWFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwODgxOTQsImV4cCI6MjA5NjY2NDE5NH0.hCBMVB3AXnDw3LauEOApXJqPfFz95v9sC0ZHWt6OQiI';
+const _supa = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+const Auth = {
+  user: null,
+
+  async init() {
     try {
-      const s = JSON.parse(saved);
-      Object.assign(State.player, s.player || {});
-      State.deck = s.deck || [];
-      State.collection = s.collection || {};
-      State.discoveredCombos = s.discoveredCombos || [];
-      State.defeatedEnemies = s.defeatedEnemies || [];
-      const menuBtns = document.querySelectorAll('.menu-btn');
-      if (menuBtns[0]) menuBtns[0].textContent = '⚔ Weiterspielen';
+      const { data: { session } } = await _supa.auth.getSession();
+      if (session) {
+        this.user = session.user;
+        await this._loadFromCloud();
+        showScreen('screen-menu');
+        UI.updateHud();
+        UI.renderMap();
+      } else {
+        showScreen('screen-login');
+      }
+    } catch(e) {
+      showScreen('screen-login');
+    }
+  },
+
+  async login() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl = document.getElementById('auth-error');
+    errEl.textContent = 'Einloggen…';
+    if (!email || !password) { errEl.textContent = 'Bitte E-Mail und Passwort eingeben.'; return; }
+    const { data, error } = await _supa.auth.signInWithPassword({ email, password });
+    if (error) { errEl.textContent = error.message; return; }
+    this.user = data.user;
+    await this._loadFromCloud();
+    errEl.textContent = '';
+    showScreen('screen-menu');
+    UI.renderMap();
+    UI.updateHud();
+  },
+
+  async register() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl = document.getElementById('auth-error');
+    errEl.textContent = 'Registrieren…';
+    if (!email || !password) { errEl.textContent = 'Bitte E-Mail und Passwort eingeben.'; return; }
+    if (password.length < 6) { errEl.textContent = 'Passwort: mind. 6 Zeichen.'; return; }
+    const { data, error } = await _supa.auth.signUp({ email, password });
+    if (error) { errEl.textContent = error.message; return; }
+    this.user = data.user;
+    const name = email.split('@')[0] || 'Magier';
+    State.player.name = name;
+    State.player.hp = 100; State.player.maxHp = 100;
+    State.player.level = 1; State.player.xp = 0; State.player.xpNext = 100;
+    State.player.gold = 0; State.player.wins = 0;
+    State.deck = ['feuer','wasser','feuer','wasser','eis','ritter','troll','gnom','licht','schatten'];
+    State.collection = { feuer:3, wasser:3, eis:2, ritter:2, gnom:2, troll:1, licht:1, schatten:1, elfe:1, flug:1 };
+    State.discoveredCombos = [];
+    State.defeatedEnemies = [];
+    await Game.saveToCloud();
+    try { await _supa.from('profiles').upsert({ id: this.user.id, username: name }); } catch(e) {}
+    errEl.textContent = '';
+    showScreen('screen-menu');
+    UI.updateHud();
+    UI.renderMap();
+    UI.showToast('✨ Willkommen bei Arcane Forge!');
+  },
+
+  async logout() {
+    await Game.saveToCloud();
+    await _supa.auth.signOut();
+    this.user = null;
+    showScreen('screen-login');
+    document.getElementById('auth-error').textContent = '';
+    UI.showToast('👋 Ausgeloggt');
+  },
+
+  async _loadFromCloud() {
+    if (!this.user) return;
+    try {
+      const { data } = await _supa.from('game_saves').select('save_data').eq('user_id', this.user.id).single();
+      if (data && data.save_data) {
+        const s = data.save_data;
+        Object.assign(State.player, s.player || {});
+        State.deck = s.deck || [];
+        State.collection = s.collection || {};
+        State.discoveredCombos = s.discoveredCombos || [];
+        State.defeatedEnemies = s.defeatedEnemies || [];
+      }
     } catch(e) {}
   }
-  showScreen('screen-menu');
+};
+
+// ===== INIT =====
+(function init() {
+  showScreen('screen-login');
+  Auth.init();
 })();
 </script>
 </body>
