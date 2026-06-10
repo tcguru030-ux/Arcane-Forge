@@ -382,6 +382,16 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 .research-btn { padding: 6px 11px; border-radius: 8px; border: 1px solid var(--purple); background: rgba(124,92,191,0.15); color: #c4b0f0; font-size: 11px; font-family: var(--font); cursor: pointer; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
 .research-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .research-btn.forge { border-color: rgba(39,174,96,0.5); background: rgba(39,174,96,0.1); color: var(--green); }
+/* ---- MANA & ABILITY BADGES ---- */
+.mana-crystal { color:#74b9e8; font-weight:800; }
+.mana-cost-badge { position:absolute; top:3px; left:4px; background:rgba(26,58,106,0.92); color:#74b9e8; font-size:10px; font-weight:800; padding:1px 5px; border-radius:6px; min-width:16px; text-align:center; line-height:1.4; }
+.hand-card.unaffordable { opacity:0.28; cursor:not-allowed; }
+.abil-tag { font-size:8px; padding:1px 4px; border-radius:3px; font-weight:700; display:inline-block; margin-top:1px; line-height:1.4; }
+.abil-taunt { background:rgba(192,57,43,0.35); color:#ef9a9a; }
+.abil-shield { background:rgba(41,128,185,0.35); color:#74b9e8; }
+.abil-fast { background:rgba(243,156,18,0.35); color:#f1c40f; }
+.abil-element { font-size:8px; color:var(--text3); margin-top:1px; text-align:center; }
+.element-bonus-flash { color:var(--green) !important; font-weight:800; }
 /* ---- PER-CARD ATTACK ---- */
 .field-slot.selectable-attacker { border-color: #ff8a65 !important; box-shadow: 0 0 10px rgba(255,138,101,0.4); cursor: pointer; animation: pulse 1s infinite; }
 .field-slot.selectable-attacker:hover { background: rgba(255,138,101,0.12); }
@@ -778,11 +788,70 @@ function showScreen(id) {
   }
 }
 
+// ===== CARD EXTRAS (cost, element, abilities) =====
+const CARD_EXTRAS = {
+  feuer:    { cost:1, element:'fire' },
+  wasser:   { cost:2, element:'water' },
+  eis:      { cost:2, element:'ice' },
+  donner:   { cost:2, element:'thunder', firstStrike:true },
+  schatten: { cost:2, firstStrike:true },
+  licht:    { cost:2 },
+  flug:     { cost:2 },
+  ritter:   { cost:2, shield:true },
+  troll:    { cost:2, taunt:true },
+  drache:   { cost:3 },
+  geist:    { cost:1 },
+  elfe:     { cost:2 },
+  daemon:   { cost:2, firstStrike:true },
+  gnom:     { cost:1 },
+  draenei:  { cost:2 },
+  lich:     { cost:3, firstStrike:true },
+  // Combo cards
+  flammenOger:     { cost:5, element:'fire' },
+  tiefseeDrache:   { cost:5, element:'water' },
+  phantomFuerst:   { cost:5, firstStrike:true },
+  sturmAdler:      { cost:5, element:'thunder', firstStrike:true },
+  eisRitter:       { cost:5, element:'ice', taunt:true },
+  lichtElfe:       { cost:4 },
+  schattendaemon:  { cost:6, firstStrike:true },
+  runengnom:       { cost:4 },
+  draeneiLich:     { cost:6, firstStrike:true },
+  feuerDrache:     { cost:6, element:'fire' },
+  eisGeist:        { cost:4, element:'ice' },
+  donnerTroll:     { cost:6, element:'thunder', taunt:true },
+  wasserElfe:      { cost:5, element:'water' },
+  lichtRitter:     { cost:5, shield:true },
+  schattengnom:    { cost:4 },
+  feuerElfe:       { cost:5, element:'fire' },
+  eisDaemon:       { cost:5, element:'ice', firstStrike:true },
+  wasserGeist:     { cost:4, element:'water', shield:true },
+  donnerDrache:    { cost:6, element:'thunder', firstStrike:true },
+  flugLich:        { cost:5, firstStrike:true },
+  trollDaemon:     { cost:6, taunt:true },
+  draeneiElfe:     { cost:5 },
+  feuerGnom:       { cost:4, element:'fire' },
+  wasserRitter:    { cost:5, element:'water', shield:true },
+  schattenFlug:    { cost:4, firstStrike:true },
+  lichLicht:       { cost:6 },
+  trollRitter:     { cost:6, taunt:true },
+  eisDrache:       { cost:6, element:'ice', taunt:true },
+  donnerGnom:      { cost:4, element:'thunder' },
+  flugElfe:        { cost:5 },
+};
+
+// fire→ice, water→fire, thunder→water, ice→thunder
+const ELEMENT_ADVANTAGE = { fire:'ice', water:'fire', thunder:'water', ice:'thunder' };
+
+function elementBonus(a, d) {
+  return (a.element && d.element && ELEMENT_ADVANTAGE[a.element] === d.element) ? 3 : 0;
+}
+
 function getCard(id) {
+  const extras = CARD_EXTRAS[id] || {};
   const base = BASE_CARDS.find(c => c.id === id);
-  if (base) return { ...base, isEndform: false };
+  if (base) return { ...base, ...extras, isEndform: false };
   const combo = COMBO_RECIPES.find(c => c.id === id);
-  if (combo) return { ...combo, isEndform: true, type:'endform' };
+  if (combo) return { ...combo, ...extras, isEndform: true, type:'endform' };
   return null;
 }
 
@@ -1271,6 +1340,8 @@ const Battle = {
   selectedAttackerIdx: -1,
   gameOver: false,
   cardPlayedThisTurn: false,
+  playerMana: 0, playerMaxMana: 0,
+  enemyMana: 0,
   enemy: null,
 
   start(region, enemy) {
@@ -1293,6 +1364,7 @@ const Battle = {
     this.comboMode = false; this.attackMode = false;
     this.selectAttackerMode = false; this.selectedAttackerIdx = -1;
     this.gameOver = false; this.cardPlayedThisTurn = false;
+    this.playerMana = 1; this.playerMaxMana = 1; this.enemyMana = 1;
     for (let i = 0; i < 4; i++) this._drawCard('player');
     for (let i = 0; i < 3; i++) this._drawCard('enemy');
     document.getElementById('enemy-name-label').textContent = enemy.name;
@@ -1315,7 +1387,7 @@ const Battle = {
     document.getElementById('battle-phase').textContent = isPlayer ? 'DEIN ZUG' : 'GEGNER';
     const noAtkBadge = document.getElementById('no-atk-badge');
     if (noAtkBadge) noAtkBadge.style.display = (isPlayer && this.turn === 1) ? '' : 'none';
-    document.getElementById('battle-cards-left').textContent = `Deck: ${this.playerDeck.length}`;
+    document.getElementById('battle-cards-left').innerHTML = `Deck:${this.playerDeck.length} <span class="mana-crystal">💎${this.playerMana}/${this.playerMaxMana}</span>`;
     const phpPct = Math.max(0, Math.round((this.playerHp / this.playerMaxHp) * 100));
     const ehpPct = Math.max(0, Math.round((this.enemyHp / this.enemyMaxHp) * 100));
     document.getElementById('player-hp-bar').style.width = phpPct + '%';
@@ -1367,21 +1439,29 @@ const Battle = {
       const slot = document.createElement('div');
       if (field[i]) {
         const c = field[i];
-        const isTarget = isEnemy && this.attackMode;
+        // Taunt restriction: if any enemy card has taunt, only those are targetable
+        const hasTauntOnField = isEnemy && this.enemyField.some(fc => fc.taunt);
+        const isTargetable = isEnemy && this.attackMode && (!hasTauntOnField || c.taunt);
         const isSelectable = !isEnemy && this.selectAttackerMode && !c.hasAttacked;
         let cls = 'field-slot occupied';
         if (isEnemy) cls += ' enemy-slot';
-        if (isTarget) cls += ' target';
+        if (isTargetable) cls += ' target';
         if (isSelectable) cls += ' selectable-attacker';
         slot.className = cls;
         const attackedCls = (!isEnemy && c.hasAttacked) ? ' attacked' : '';
+        // Ability tags
+        let tags = '';
+        if (c.taunt) tags += '<span class="abil-tag abil-taunt">SPOTT</span>';
+        if (c.shieldActive) tags += '<span class="abil-tag abil-shield">🛡</span>';
+        if (c.firstStrike) tags += '<span class="abil-tag abil-fast">⚡</span>';
+        if (c.element) { const eMap={fire:'🔥',water:'💧',ice:'❄',thunder:'⚡'}; tags += `<div class="abil-element">${eMap[c.element]||''}</div>`; }
         slot.innerHTML = `<div class="mini-card${attackedCls}">
           <div class="mini-card-emoji">${c.emoji}</div>
-          <div class="mini-card-name">${c.name.length > 12 ? c.name.substring(0,11)+'…' : c.name}</div>
+          <div class="mini-card-name">${c.name.length > 11 ? c.name.substring(0,10)+'…' : c.name}</div>
           <div class="mini-card-stats"><span class="mini-atk">⚔${c.atk}</span><span class="mini-def">🛡${c.def}</span></div>
-          ${!isEnemy && c.hasAttacked ? '<div style="font-size:8px;color:var(--text3);">✓ angegl.</div>' : ''}
+          <div style="display:flex;gap:2px;flex-wrap:wrap;justify-content:center;">${tags}</div>
         </div>`;
-        if (isTarget) { const idx = i; slot.onclick = () => Battle._executeAttack(idx); }
+        if (isTargetable) { const idx = i; slot.onclick = () => Battle._executeAttack(idx); }
         else if (isSelectable) { const idx = i; slot.onclick = () => Battle._selectAttacker(idx); }
       } else {
         slot.className = 'field-slot';
@@ -1415,8 +1495,11 @@ const Battle = {
         if (idx === this.selectedHandIdx) cls += ' selected';
       }
       if (hasComboSet.has(idx) && !c.isEndform) cls += ' has-combo';
+      const cardCost = c.cost || 1;
+      const canAfford = this.playerMana >= cardCost;
+      if (!canAfford && !this.comboMode) cls += ' unaffordable';
       div.className = cls;
-      div.innerHTML = `<div class="hand-card-emoji">${c.emoji}</div><div class="hand-card-name">${c.name}</div><div class="hand-card-stats"><span class="mini-atk">⚔${c.atk}</span><span class="mini-def">🛡${c.def}</span></div>`;
+      div.innerHTML = `<div class="mana-cost-badge">💎${cardCost}</div><div class="hand-card-emoji">${c.emoji}</div><div class="hand-card-name">${c.name}</div><div class="hand-card-stats"><span class="mini-atk">⚔${c.atk}</span><span class="mini-def">🛡${c.def}</span></div>`;
       div.onclick = () => Battle._selectHandCard(idx);
       el.appendChild(div);
     });
@@ -1443,7 +1526,10 @@ const Battle = {
     if (this.playerField.length >= 4) { this._log('Feld ist voll! Max 4 Karten.'); return; }
     const id = this.playerHand.splice(this.selectedHandIdx, 1)[0];
     const c = getCard(id);
-    this.playerField.push({ ...c, id, hasAttacked: false });
+    const cost = c.cost || 1;
+    if (this.playerMana < cost) { this._log(`❌ Nicht genug Mana! Benötigt: 💎${cost}, vorhanden: 💎${this.playerMana}`); this.playerHand.splice(this.selectedHandIdx, 0, id); return; }
+    this.playerMana -= cost;
+    this.playerField.push({ ...c, id, hasAttacked: false, shieldActive: c.shield ? true : false });
     this.selectedHandIdx = -1;
     this.cardPlayedThisTurn = true;
     this._log(`Du spielst ${c.emoji} ${c.name}. (⚔${c.atk} 🛡${c.def})`);
@@ -1486,8 +1572,12 @@ const Battle = {
     const idxs = [this.combo1Idx, this.combo2Idx].sort((a,b) => b - a);
     idxs.forEach(i => this.playerHand.splice(i, 1));
     this.combo1Idx = -1; this.combo2Idx = -1;
+    const resultCard = getCard(recipe.id);
+    const comboCost = resultCard ? (resultCard.cost || 3) : 3;
+    if (this.playerMana < comboCost) { this._log(`❌ Nicht genug Mana für Kombi! Benötigt: 💎${comboCost}, vorhanden: 💎${this.playerMana}`); this.combo1Idx = -1; this.combo2Idx = -1; this._render(); return; }
+    this.playerMana -= comboCost;
     this.cardPlayedThisTurn = true;
-    const result = { ...recipe, id: recipe.id, isEndform: true, hasAttacked: false };
+    const result = { ...recipe, ...getCard(recipe.id), id: recipe.id, isEndform: true, hasAttacked: false, shieldActive: resultCard?.shield ? true : false };
     if (this.playerField.length < 4) {
       this.playerField.push(result);
       this._log(`✨ ${c1.emoji}${c1.name} + ${c2.emoji}${c2.name} = ${recipe.emoji} ${recipe.name}! (⚔${recipe.atk} 🛡${recipe.def})`);
@@ -1537,37 +1627,42 @@ const Battle = {
     const target = this.enemyField[enemyIdx];
     if (!target) { this._render(); return; }
     attacker.hasAttacked = true;
-    const msgs = [`⚔ ${attacker.emoji}${attacker.name} vs ${target.emoji}${target.name}:`];
+    const msgs = [];
+    const bonus = elementBonus(attacker, target);
+    if (bonus > 0) msgs.push(`🌟Elementvorteil +${bonus}ATK!`);
+    const effectiveAtk = attacker.atk + bonus;
 
-    const newTargetDef = target.def - attacker.atk;
+    // Shield check
+    if (target.shieldActive) {
+      target.shieldActive = false;
+      msgs.push(`⚔ ${attacker.emoji} vs ${target.emoji} – 🛡 Schild absorbiert!`);
+      this._log(msgs.join(' ')); this._render(); return;
+    }
+
+    const newTargetDef = target.def - effectiveAtk;
     const newAttackerDef = attacker.def - target.atk;
-    let targetDestroyed = false, attackerDestroyed = false;
+    let tDead = false, aDead = false;
 
     if (newTargetDef <= 0) {
-      targetDestroyed = true;
+      tDead = true;
       const lp = -newTargetDef;
       this.enemyHp = Math.max(0, this.enemyHp - lp);
-      msgs.push(`💀${target.emoji} zerstört!${lp > 0 ? ` Gegner -${lp}LP` : ''}`);
+      msgs.push(`⚔ ${attacker.emoji}→${target.emoji}: 💀 zerstört!${lp>0?` Gegner -${lp}LP`:''}`);
+      // First strike: if attacker destroys target, no counter damage
+      if (!attacker.firstStrike) {
+        if (newAttackerDef <= 0) { aDead = true; const lp2=-newAttackerDef; this.playerHp=Math.max(0,this.playerHp-lp2); msgs.push(`💀${attacker.emoji}${lp2>0?` Du -${lp2}LP`:''}`); }
+        else { attacker.def = newAttackerDef; msgs.push(`${attacker.emoji} DEF→${newAttackerDef}`); }
+      } else { msgs.push(`⚡ First Strike – kein Gegenangriff!`); }
     } else {
       target.def = newTargetDef;
-      msgs.push(`${target.emoji} überlebt (DEF→${newTargetDef})`);
+      msgs.push(`⚔ ${attacker.emoji}→${target.emoji}: DEF→${newTargetDef}`);
+      if (newAttackerDef <= 0) { aDead = true; const lp2=-newAttackerDef; this.playerHp=Math.max(0,this.playerHp-lp2); msgs.push(`💀${attacker.emoji}${lp2>0?` Du -${lp2}LP`:''}`); }
+      else { attacker.def = newAttackerDef; msgs.push(`${attacker.emoji} DEF→${newAttackerDef}`); }
     }
 
-    if (newAttackerDef <= 0) {
-      attackerDestroyed = true;
-      const lp = -newAttackerDef;
-      this.playerHp = Math.max(0, this.playerHp - lp);
-      msgs.push(`💀${attacker.emoji} zerstört!${lp > 0 ? ` Du -${lp}LP` : ''}`);
-    } else {
-      attacker.def = newAttackerDef;
-      msgs.push(`${attacker.emoji} überlebt (DEF→${newAttackerDef})`);
-    }
-
-    if (targetDestroyed) this.enemyField.splice(enemyIdx, 1);
-    if (attackerDestroyed) this.playerField.splice(attackerIdx, 1);
-
-    this._log(msgs.join(' '));
-    this._render();
+    if (tDead) this.enemyField.splice(enemyIdx, 1);
+    if (aDead) this.playerField.splice(attackerIdx, 1);
+    this._log(msgs.join(' ')); this._render();
     if (!this._checkWin()) this._checkLoss();
   },
 
@@ -1585,16 +1680,20 @@ const Battle = {
   _enemyTurn() {
     if (this.phase !== 'enemy') return;
     this._drawCard('enemy');
-    // Smart card play: pick highest ATK+DEF card
+    this.enemyMana = Math.min(this.turn, 8);
+    // Smart card play: pick best affordable card
     if (this.enemyHand.length > 0 && this.enemyField.length < 4) {
-      let bestIdx = 0, bestScore = -1;
+      let bestIdx = -1, bestScore = -1;
       this.enemyHand.forEach((id, i) => {
         const c = getCard(id);
-        if (c && c.atk * 1.4 + c.def > bestScore) { bestScore = c.atk * 1.4 + c.def; bestIdx = i; }
+        const cost = c ? (c.cost || 1) : 99;
+        if (c && cost <= this.enemyMana && c.atk * 1.4 + c.def > bestScore) { bestScore = c.atk * 1.4 + c.def; bestIdx = i; }
       });
-      const id = this.enemyHand.splice(bestIdx, 1)[0];
-      const c = getCard(id);
-      if (c) { this.enemyField.push({ ...c, id, hasAttacked: false }); this._log(`👺 ${this.enemy.name} spielt ${c.emoji} ${c.name}. (⚔${c.atk} 🛡${c.def})`); }
+      if (bestIdx >= 0) {
+        const id = this.enemyHand.splice(bestIdx, 1)[0];
+        const c = getCard(id);
+        if (c) { this.enemyMana -= (c.cost || 1); this.enemyField.push({ ...c, id, hasAttacked: false, shieldActive: c.shield ? true : false }); this._log(`👺 ${this.enemy.name} spielt ${c.emoji} ${c.name}. (⚔${c.atk} 🛡${c.def})`); }
+      }
     }
     this.enemyField.forEach(c => c.hasAttacked = false);
     setTimeout(() => {
@@ -1610,27 +1709,56 @@ const Battle = {
     if (attackerIdx < 0) { this._finishEnemyTurn(); return; }
     const attacker = this.enemyField[attackerIdx];
     attacker.hasAttacked = true;
+    const msgs = [];
+
     if (this.playerField.length === 0) {
       this.playerHp = Math.max(0, this.playerHp - attacker.atk);
-      this._log(`💢 ${attacker.emoji} greift dich direkt an! -${attacker.atk} LP`);
-      this._render();
+      msgs.push(`💢 ${attacker.emoji} greift direkt an! -${attacker.atk} LP`);
+      this._log(msgs.join(' ')); this._render();
       if (this._checkLoss()) return;
-      setTimeout(() => this._executeEnemyAttacks(), 600);
-      return;
+      setTimeout(() => this._executeEnemyAttacks(), 600); return;
     }
-    const targetIdx = this._smartEnemyTarget(attacker);
+
+    // Taunt: AI must attack taunt card if one exists
+    const hasTaunt = this.playerField.some(c => c.taunt);
+    const targetIdx = hasTaunt
+      ? this.playerField.findIndex(c => c.taunt)
+      : this._smartEnemyTarget(attacker);
     const target = this.playerField[targetIdx];
-    const msgs = [`💢 ${attacker.emoji}${attacker.name} → ${target.emoji}${target.name}:`];
-    const newTDef = target.def - attacker.atk, newADef = attacker.def - target.atk;
+
+    const bonus = elementBonus(attacker, target);
+    if (bonus > 0) msgs.push(`🌟 +${bonus}ATK`);
+    const effectiveAtk = attacker.atk + bonus;
+
+    // Shield check
+    if (target.shieldActive) {
+      target.shieldActive = false;
+      msgs.push(`💢 ${attacker.emoji} vs ${target.emoji} – 🛡 Schild absorbiert!`);
+      this._log(msgs.join(' ')); this._render();
+      if (this._checkLoss() || this._checkWin()) return;
+      setTimeout(() => this._executeEnemyAttacks(), 650); return;
+    }
+
+    const newTDef = target.def - effectiveAtk;
+    const newADef = attacker.def - target.atk;
     let tDead = false, aDead = false;
-    if (newTDef <= 0) { tDead = true; const lp = -newTDef; this.playerHp = Math.max(0, this.playerHp - lp); msgs.push(`💀${target.emoji}${lp>0?` Du -${lp}LP`:''}`); }
-    else { target.def = newTDef; msgs.push(`${target.emoji} DEF→${newTDef}`); }
-    if (newADef <= 0) { aDead = true; const lp = -newADef; this.enemyHp = Math.max(0, this.enemyHp - lp); msgs.push(`💀${attacker.emoji}${lp>0?` Gegner -${lp}LP`:''}`); }
-    else { attacker.def = newADef; msgs.push(`${attacker.emoji} DEF→${newADef}`); }
+
+    if (newTDef <= 0) {
+      tDead = true; const lp = -newTDef; this.playerHp = Math.max(0, this.playerHp - lp);
+      msgs.push(`💢 ${attacker.emoji}→${target.emoji}: 💀${lp>0?` Du -${lp}LP`:''}`);
+      if (!attacker.firstStrike) {
+        if (newADef <= 0) { aDead = true; const lp2=-newADef; this.enemyHp=Math.max(0,this.enemyHp-lp2); msgs.push(`💀${attacker.emoji}${lp2>0?` Gegner -${lp2}LP`:''}`); }
+        else { attacker.def = newADef; msgs.push(`${attacker.emoji} DEF→${newADef}`); }
+      } else { msgs.push(`⚡ First Strike!`); }
+    } else {
+      target.def = newTDef; msgs.push(`💢 ${attacker.emoji}→${target.emoji}: DEF→${newTDef}`);
+      if (newADef <= 0) { aDead = true; const lp2=-newADef; this.enemyHp=Math.max(0,this.enemyHp-lp2); msgs.push(`💀${attacker.emoji}${lp2>0?` Gegner -${lp2}LP`:''}`); }
+      else { attacker.def = newADef; msgs.push(`${attacker.emoji} DEF→${newADef}`); }
+    }
+
     if (tDead) this.playerField.splice(targetIdx, 1);
     if (aDead) this.enemyField.splice(attackerIdx, 1);
-    this._log(msgs.join(' '));
-    this._render();
+    this._log(msgs.join(' ')); this._render();
     if (this._checkLoss() || this._checkWin()) return;
     setTimeout(() => this._executeEnemyAttacks(), 650);
   },
@@ -1656,8 +1784,10 @@ const Battle = {
     this.cardPlayedThisTurn = false;
     this.selectedHandIdx = -1;
     this.playerField.forEach(c => c.hasAttacked = false);
+    this.playerMaxMana = Math.min(this.turn, 8);
+    this.playerMana = this.playerMaxMana;
     this._render();
-    if (!this._checkLoss()) this._log(`Zug ${this.turn} – dein Zug!`);
+    if (!this._checkLoss()) this._log(`Zug ${this.turn} – dein Zug! 💎${this.playerMana} Mana`);
   },
 
   _checkWin() {

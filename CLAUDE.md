@@ -216,18 +216,46 @@ Overlays: `overlay-modal`, `overlay-carddetail`, `overlay-cardpick`
 
 ---
 
+## Implementierte Fähigkeits-Mechaniken
+
+### CARD_EXTRAS Objekt
+Jede Karte kann folgende Extra-Felder haben (definiert in `CARD_EXTRAS`):
+- `cost: number` – Mana-Kosten (1–6)
+- `element: 'fire'|'water'|'ice'|'thunder'` – für Element-Vorteile
+- `taunt: true` – Gegner muss diese Karte zuerst angreifen
+- `firstStrike: true` – Bei Zerstörung: kein Gegenangriff
+- `shield: true` – Absorbiert einmal Schaden vollständig
+
+### Mana-System
+- Zug 1: 1 Mana, Zug 2: 2 Mana, ... max 8 Mana
+- Karten kosten Mana beim Spielen
+- Anzeige im Battle: `💎 X/X`
+- Zu teure Karten werden gedimmt angezeigt
+- Gegner hat ebenfalls Mana und spielt nur was er sich leisten kann
+
+### Element-Vorteile (`ELEMENT_ADVANTAGE`)
+`fire→ice, water→fire, thunder→water, ice→thunder` → +3 ATK Bonus
+- Funktion: `elementBonus(attacker, defender)` gibt 0 oder 3 zurück
+
+### Schilde (`shieldActive`)
+- Beim Platzieren: `shieldActive = c.shield ? true : false`
+- Bei Angriff: wenn `target.shieldActive`, wird Angriff blockiert + `shieldActive = false`
+- Auch von KI genutzt
+
+### Taunt
+- In `_renderField()`: wenn feindliches Feld Taunt-Karten hat → nur diese als Ziel wählbar
+- In `_executeEnemyAttacks()`: KI muss Taunt-Karte angreifen wenn vorhanden
+
+### First Strike
+- In `_executeAttack()` und `_executeEnemyAttacks()`: Wenn Angreifer First Strike hat UND Ziel zerstört wird → Angreifer nimmt keinen Gegenangriff
+
 ## Offene Feature-Vorschläge (noch nicht implementiert)
 
-1. **Taunt** – Karten zwingen Gegner zum Angriff
-2. **First Strike** – Hohe ATK greift zuerst an
-3. **Einmal-Schild** – Absorbiert ersten Treffer
-4. **Element-Vorteile** – Feuer > Eis > Donner > Wasser > Feuer
 5. **DoT (Vergiftung/Brennen)** – Schaden pro Runde
 6. **Defensiv-Modus** – +50% DEF, kein Angriff
-7. **Mana-System** – Karten kosten Mana (steigt pro Runde)
 
 ---
 
 ## Version
 
-`v3.0` – Battle-System (simultane ATK/DEF), Supabase Auth, Labor-Erforschung, Per-Karte-Angriff, Smart-KI
+`v4.0` – Mana-System, Taunt, First Strike, Schilde, Element-Vorteile, Labor-Erforschung, Per-Karte-Angriff, Smart-KI
