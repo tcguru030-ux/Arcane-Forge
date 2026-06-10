@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Arcane Forge</title>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --bg2: #12121c;
+  --bg3: #1a1a28;
+  --bg4: #22223a;
+  --accent: #c8a64a;
+  --accent2: #a07830;
+  --purple: #7c5cbf;
+  --purple2: #5a3fa0;
+  --red: #c0392b;
+  --blue: #2980b9;
+  --green: #27ae60;
+  --ice: #74b9e8;
+  --shadow: #1a1228;
+  --text: #e8e0cc;
+  --text2: #a09880;
+  --text3: #6a6050;
+  --border: rgba(200,166,74,0.25);
+  --border2: rgba(200,166,74,0.15);
+  --common: #888888;
+  --rare: #3b82f6;
+  --epic: #8b5cf6;
+  --legendary: #f59e0b;
+  --mythic: #ef4444;
+  --font: 'Segoe UI', system-ui, sans-serif;
+  --radius: 10px;
+  --hp-full: #2ecc71;
+  --hp-mid: #f39c12;
+  --hp-low: #e74c3c;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; overflow: hidden; }
+#app { width: 100%; height: 100%; position: relative; }
+
+/* ---- SCREENS ---- */
+.screen { position: absolute; inset: 0; display: none; flex-direction: column; overflow: hidden; }
+.screen.active { display: flex; }
+
+/* ---- MAIN MENU ---- */
+#screen-menu {
+  background: radial-gradient(ellipse at top, #1a0e35 0%, #0a0a0f 60%);
+  align-items: center; justify-content: center; gap: 0;
+}
+.menu-glow {
+  position: absolute; top: -80px; left: 50%; transform: translateX(-50%);
+  width: 320px; height: 320px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(124,92,191,0.22) 0%, transparent 70%);
+  pointer-events: none;
+}
+.menu-title {
+  font-size: 42px; font-weight: 800; letter-spacing: 3px;
+  color: var(--accent); text-shadow: 0 0 40px rgba(200,166,74,0.5);
+  margin-bottom: 6px; text-align: center;
+}
+.menu-sub { color: var(--text2); font-size: 13px; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 48px; text-align: center; }
+.menu-btn {
+  width: 220px; padding: 13px 0; border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04); border-radius: var(--radius);
+  color: var(--text); font-size: 15px; font-family: var(--font);
+  cursor: pointer; margin-bottom: 10px; letter-spacing: 1px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.menu-btn:hover { background: rgba(200,166,74,0.1); border-color: var(--accent); }
+.menu-btn.primary { background: rgba(200,166,74,0.18); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.menu-version { position: absolute; bottom: 12px; color: var(--text3); font-size: 11px; }
+
+/* ---- TOP BAR ---- */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: var(--bg2); border-bottom: 1px solid var(--border2);
+  flex-shrink: 0; min-height: 50px;
+}
+.topbar-title { font-size: 16px; font-weight: 700; color: var(--accent); }
+.topbar-back { background: none; border: none; color: var(--text2); font-size: 22px; cursor: pointer; padding: 0 6px; }
+.xp-bar-row { display: flex; align-items: center; gap: 8px; }
+.xp-bar-outer { width: 80px; height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+.xp-bar-inner { height: 100%; background: var(--purple); border-radius: 3px; transition: width 0.4s; }
+.level-badge { background: var(--purple2); color: #d4b8ff; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+
+/* ---- WORLD MAP ---- */
+#screen-map { background: var(--bg); }
+.map-content { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.region-card {
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius);
+  padding: 14px; cursor: pointer; transition: border-color 0.2s, background 0.2s;
+  display: flex; align-items: center; gap: 12px;
+}
+.region-card:hover { border-color: var(--accent); background: var(--bg3); }
+.region-card.locked { opacity: 0.45; cursor: default; }
+.region-icon { font-size: 28px; width: 44px; text-align: center; }
+.region-info { flex: 1; }
+.region-name { font-size: 15px; font-weight: 700; color: var(--text); }
+.region-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.region-progress { font-size: 11px; color: var(--accent); margin-top: 4px; }
+.region-badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; background: var(--bg4); color: var(--text2); }
+.region-badge.done { background: rgba(39,174,96,0.2); color: var(--green); }
+
+/* ---- ENEMY LIST ---- */
+#screen-enemies { background: var(--bg); }
+.enemies-list { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.enemy-card {
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius);
+  padding: 13px 14px; cursor: pointer; display: flex; align-items: center; gap: 12px;
+  transition: border-color 0.2s;
+}
+.enemy-card:hover { border-color: var(--accent); }
+.enemy-card.defeated { opacity: 0.6; }
+.enemy-portrait { font-size: 32px; width: 48px; text-align: center; }
+.enemy-info { flex: 1; }
+.enemy-name { font-size: 15px; font-weight: 700; }
+.enemy-stats { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.enemy-reward { font-size: 11px; color: var(--accent); margin-top: 3px; }
+.enemy-type-badge { font-size: 10px; padding: 2px 8px; border-radius: 20px; margin-bottom: 4px; align-self: flex-start; }
+.badge-normal { background: rgba(41,128,185,0.2); color: var(--blue); }
+.badge-elite { background: rgba(124,92,191,0.2); color: #b39ddb; }
+.badge-boss { background: rgba(192,57,43,0.2); color: #ef9a9a; }
+.difficulty-stars { color: var(--accent); font-size: 13px; }
+
+/* ---- BATTLE SCREEN ---- */
+#screen-battle { background: radial-gradient(ellipse at top, #12062b 0%, #0a0a0f 70%); }
+.battle-area { flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 8px; overflow: hidden; }
+.battle-info-row { display: flex; justify-content: space-between; align-items: center; padding: 0 4px; }
+.hp-row { display: flex; align-items: center; gap: 8px; }
+.hp-label { font-size: 11px; color: var(--text2); width: 60px; text-align: right; }
+.hp-bar-outer { flex: 1; height: 10px; background: var(--bg3); border-radius: 5px; overflow: hidden; }
+.hp-bar-inner { height: 100%; border-radius: 5px; transition: width 0.4s; }
+.hp-num { font-size: 11px; color: var(--text2); min-width: 40px; }
+.battle-field { flex: 1; display: grid; grid-template-rows: 1fr 1fr; gap: 6px; min-height: 0; }
+.field-row { display: flex; gap: 6px; align-items: center; justify-content: center; min-height: 0; }
+.field-slot {
+  width: 80px; height: 112px; border: 1.5px dashed rgba(255,255,255,0.1);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 11px; color: var(--text3); cursor: pointer; transition: border-color 0.2s;
+  position: relative;
+}
+.field-slot.occupied { border-style: solid; border-color: var(--border); cursor: default; }
+.field-slot.selectable { border-color: var(--accent); cursor: pointer; }
+.field-slot.selectable:hover { background: rgba(200,166,74,0.08); }
+.field-slot.enemy-slot { cursor: default; }
+.field-slot.enemy-slot.target { border-color: var(--red); box-shadow: 0 0 12px rgba(192,57,43,0.4); cursor: pointer; }
+
+.mini-card { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 0; padding: 5px 3px; }
+.mini-card-emoji { font-size: 30px; line-height: 1; }
+.mini-card-name { font-size: 9.5px; color: var(--text); text-align: center; line-height: 1.2; font-weight: 700; }
+.mini-card-stats { font-size: 12px; display: flex; gap: 4px; font-weight: 900; }
+.mini-atk { color: #ff8a65; }
+.mini-def { color: #64b5f6; }
+
+.battle-hand { flex-shrink: 0; display: flex; gap: 7px; overflow-x: auto; padding: 7px 8px;
+  background: rgba(0,0,0,0.3); border-top: 1px solid var(--border2);
+  scrollbar-width: none; min-height: 120px; }
+.battle-hand::-webkit-scrollbar { display: none; }
+
+.hand-card {
+  width: 78px; flex-shrink: 0; height: 106px;
+  border: 1.5px solid var(--border2); border-radius: 10px;
+  background: var(--bg2); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 0;
+  padding: 6px 4px 5px; transition: transform 0.15s, border-color 0.15s;
+  position: relative;
+}
+.hand-card:hover { transform: translateY(-5px); border-color: var(--accent); }
+.hand-card.selected { border-color: var(--accent); background: rgba(200,166,74,0.12); transform: translateY(-7px); }
+.hand-card.combo-selected { border-color: var(--purple); background: rgba(124,92,191,0.12); transform: translateY(-7px); }
+.hand-card.has-combo::after { content: '⚗'; position: absolute; top: 3px; right: 4px; font-size: 10px; }
+.hand-card-emoji { font-size: 28px; line-height: 1; }
+.hand-card-name { font-size: 10px; text-align: center; color: var(--text); line-height: 1.2; font-weight: 700; }
+.hand-card-stats { display: flex; gap: 4px; font-size: 13px; font-weight: 900; }
+
+.battle-actions { flex-shrink: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 6px 8px; }
+.battle-btn {
+  padding: 11px 6px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg3); color: var(--text); font-size: 13px; cursor: pointer;
+  font-family: var(--font); transition: background 0.2s; font-weight: 700;
+}
+.battle-btn:hover { background: var(--bg4); }
+.battle-btn.primary { background: rgba(200,166,74,0.18); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.battle-btn.btn-end { background: rgba(200,166,74,0.12); border-color: var(--accent); color: var(--accent); }
+.battle-btn.btn-combo { border-color: rgba(124,92,191,0.5); color: #c4b0f0; }
+.battle-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.combo-hint-strip { flex-shrink: 0; overflow-x: auto; white-space: nowrap; padding: 5px 10px;
+  background: rgba(124,92,191,0.07); border-top: 1px solid rgba(124,92,191,0.2);
+  scrollbar-width: none; min-height: 28px; display: flex; align-items: center; }
+.combo-hint-strip::-webkit-scrollbar { display: none; }
+.combo-hint-item { display: inline-flex; align-items: center; gap: 4px; margin-right: 14px; font-size: 12px; color: var(--text2); white-space: nowrap; }
+.combo-hint-result { color: #c4b0f0; font-weight: 800; }
+.no-atk-badge { font-size: 11px; padding: 2px 9px; border-radius: 20px; background: rgba(192,57,43,0.2); color: #ef9a9a; font-weight: 700; margin-left: 6px; }
+
+.battle-log { font-size: 13px; color: var(--text2); padding: 5px 10px; min-height: 32px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--border2); flex-shrink: 0; line-height: 1.4; }
+
+.phase-indicator { font-size: 11px; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
+
+/* ---- COLLECTION ---- */
+#screen-collection { background: var(--bg); }
+.collection-filters { display: flex; gap: 6px; padding: 10px 14px; overflow-x: auto; flex-shrink: 0; scrollbar-width: none; }
+.collection-filters::-webkit-scrollbar { display: none; }
+.filter-btn { padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border2); background: var(--bg2); color: var(--text2); font-size: 12px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+.filter-btn.active { background: rgba(200,166,74,0.15); border-color: var(--accent); color: var(--accent); }
+.card-grid { flex: 1; overflow-y: auto; padding: 10px 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-content: start; }
+.coll-card {
+  background: var(--bg2); border: 1.5px solid var(--border2); border-radius: 10px;
+  padding: 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  cursor: pointer; transition: border-color 0.2s, background 0.2s; aspect-ratio: 2/3;
+  position: relative; overflow: hidden;
+}
+.coll-card:hover { border-color: var(--accent); }
+.coll-card.common { border-color: rgba(136,136,136,0.3); }
+.coll-card.rare { border-color: rgba(59,130,246,0.4); }
+.coll-card.epic { border-color: rgba(139,92,246,0.5); }
+.coll-card.legendary { border-color: rgba(245,158,11,0.6); }
+.coll-card.mythic { border-color: rgba(239,68,68,0.7); }
+.coll-card-emoji { font-size: 36px; }
+.coll-card-name { font-size: 12px; font-weight: 700; text-align: center; color: var(--text); line-height: 1.2; }
+.coll-card-type { font-size: 10px; color: var(--text3); }
+.coll-card-stats { display: flex; gap: 6px; font-size: 12px; font-weight: 800; }
+.rarity-dot { width: 7px; height: 7px; border-radius: 50%; position: absolute; top: 6px; right: 6px; }
+.rarity-common { background: var(--common); }
+.rarity-rare { background: var(--rare); }
+.rarity-epic { background: var(--epic); }
+.rarity-legendary { background: var(--legendary); }
+.rarity-mythic { background: var(--mythic); }
+.count-badge { position: absolute; top: 5px; left: 5px; background: var(--bg4); color: var(--text2); font-size: 10px; padding: 1px 5px; border-radius: 10px; }
+
+/* ---- DECK EDITOR ---- */
+#screen-deck { background: var(--bg); }
+.deck-split { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.deck-top { flex: 1; overflow-y: auto; padding: 10px 14px; min-height: 0; }
+.deck-bottom { flex: 1; overflow-y: auto; padding: 10px 14px; border-top: 1px solid var(--border2); min-height: 0; }
+.section-label { font-size: 12px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+.deck-list { display: flex; flex-direction: column; gap: 6px; }
+.deck-item {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: 8px;
+  padding: 8px 10px; cursor: pointer;
+}
+.deck-item:hover { border-color: var(--red); }
+.deck-item-emoji { font-size: 20px; width: 30px; text-align: center; }
+.deck-item-name { flex: 1; font-size: 13px; }
+.deck-item-stats { font-size: 11px; color: var(--text2); }
+.deck-item-remove { color: var(--red); font-size: 18px; padding: 0 4px; }
+.coll-card.in-deck { opacity: 0.5; }
+.deck-count { font-size: 13px; color: var(--accent); font-weight: 700; }
+
+/* ---- COMBINATION LAB ---- */
+#screen-combo { background: var(--bg); }
+.combo-area { flex: 1; overflow-y: auto; padding: 14px; }
+.combo-slots { display: flex; gap: 12px; align-items: center; justify-content: center; margin-bottom: 20px; }
+.combo-slot {
+  width: 90px; height: 130px; border: 2px dashed var(--border2); border-radius: 10px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; background: var(--bg2); cursor: pointer; font-size: 12px; color: var(--text3);
+}
+.combo-slot.filled { border-style: solid; border-color: var(--accent); cursor: default; }
+.combo-plus { font-size: 24px; color: var(--text3); }
+.combo-result {
+  width: 110px; height: 150px; border: 2px solid var(--purple); border-radius: 10px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; background: rgba(124,92,191,0.1);
+}
+.combo-result-label { font-size: 10px; color: var(--purple); text-transform: uppercase; letter-spacing: 1px; }
+.combo-result-emoji { font-size: 36px; }
+.combo-result-name { font-size: 12px; font-weight: 700; text-align: center; color: var(--text); }
+.combo-result-stats { font-size: 11px; color: var(--text2); }
+.combo-result.unknown { opacity: 0.3; filter: grayscale(1); }
+.combo-btn { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--purple); background: rgba(124,92,191,0.15); color: #b39ddb; font-size: 15px; font-family: var(--font); cursor: pointer; margin-bottom: 16px; }
+.combo-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.combo-discovered { margin-top: 8px; }
+.combo-disc-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border2); }
+.combo-disc-emoji { font-size: 22px; width: 36px; text-align: center; }
+.combo-disc-info { flex: 1; }
+.combo-disc-name { font-size: 13px; font-weight: 700; }
+.combo-disc-recipe { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+/* ---- CARD PICKER (overlay) ---- */
+#overlay-cardpick {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.85);
+  display: none; flex-direction: column; z-index: 100;
+}
+#overlay-cardpick.visible { display: flex; }
+.cardpick-title { font-size: 15px; font-weight: 700; padding: 14px; color: var(--accent); flex-shrink: 0; }
+.cardpick-grid { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 0 14px 14px; align-content: start; }
+
+/* ---- MODAL ---- */
+#overlay-modal {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.85);
+  display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 200;
+}
+#overlay-modal.visible { display: flex; }
+.modal-box {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 14px;
+  padding: 24px 22px; width: 310px; text-align: center; display: flex; flex-direction: column; gap: 14px;
+}
+.modal-icon { font-size: 48px; }
+.modal-title { font-size: 20px; font-weight: 800; color: var(--accent); }
+.modal-body { font-size: 14px; color: var(--text2); line-height: 1.6; }
+.modal-btn { padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: rgba(200,166,74,0.15); color: var(--accent); font-size: 14px; font-family: var(--font); cursor: pointer; font-weight: 700; }
+.modal-btn2 { padding: 12px; border-radius: 10px; border: 1px solid var(--border2); background: var(--bg3); color: var(--text); font-size: 14px; font-family: var(--font); cursor: pointer; }
+.reward-list { text-align: left; background: var(--bg3); border-radius: 8px; padding: 10px 14px; }
+.reward-item { font-size: 13px; color: var(--text); padding: 3px 0; display: flex; align-items: center; gap: 8px; }
+
+/* ---- CARD DETAIL OVERLAY ---- */
+#overlay-carddetail {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.9);
+  display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 150;
+}
+#overlay-carddetail.visible { display: flex; }
+.card-detail-box {
+  background: var(--bg2); border: 1.5px solid var(--accent); border-radius: 16px;
+  width: 280px; padding: 24px 20px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.card-detail-emoji { font-size: 56px; }
+.card-detail-name { font-size: 20px; font-weight: 800; color: var(--text); }
+.card-detail-rarity { font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+.card-detail-type { font-size: 12px; color: var(--text3); }
+.card-detail-stats { display: flex; gap: 20px; margin-top: 4px; }
+.stat-box { text-align: center; background: var(--bg3); border-radius: 8px; padding: 8px 16px; }
+.stat-box-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; }
+.stat-box-val { font-size: 22px; font-weight: 800; color: var(--text); }
+.card-detail-ability { background: var(--bg3); border-radius: 8px; padding: 10px; width: 100%; text-align: center; }
+.card-detail-ability-label { font-size: 10px; color: var(--purple); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.card-detail-ability-text { font-size: 13px; color: var(--text); }
+.card-detail-desc { font-size: 12px; color: var(--text2); line-height: 1.6; text-align: center; }
+.card-detail-combos { width: 100%; }
+.card-detail-combos-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; text-align: center; }
+.combo-recipe-row { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; color: var(--text2); padding: 3px 0; }
+
+/* ---- SETTINGS ---- */
+#screen-settings { background: var(--bg); }
+.settings-list { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.settings-item { background: var(--bg2); border: 1px solid var(--border2); border-radius: 10px; padding: 14px; display: flex; justify-content: space-between; align-items: center; }
+.settings-label { font-size: 14px; }
+.settings-value { font-size: 13px; color: var(--accent); }
+.settings-save-btn { margin: 0 14px 14px; padding: 13px; border-radius: 10px; border: 1px solid var(--accent); background: rgba(200,166,74,0.18); color: var(--accent); font-size: 15px; font-family: var(--font); cursor: pointer; font-weight: 700; }
+
+/* ---- ANIMATIONS ---- */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+@keyframes comboBurst { 0% { transform: scale(0.5); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+.animate-fadein { animation: fadeIn 0.3s ease; }
+.animate-slideup { animation: slideUp 0.35s ease; }
+.animate-pulse { animation: pulse 0.5s ease; }
+.animate-shake { animation: shake 0.3s ease; }
+.animate-combo { animation: comboBurst 0.5s cubic-bezier(0.175,0.885,0.32,1.275); }
+
+/* ---- NAV BAR ---- */
+.navbar { display: flex; border-top: 1px solid var(--border2); background: var(--bg2); flex-shrink: 0; }
+.nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 4px; cursor: pointer; color: var(--text3); font-size: 10px; gap: 3px; background: none; border: none; font-family: var(--font); transition: color 0.2s; }
+.nav-btn.active { color: var(--accent); }
+.nav-btn-icon { font-size: 20px; }
+
+/* ---- UTILS ---- */
+.rarity-text-common { color: var(--common); }
+.rarity-text-rare { color: var(--rare); }
+.rarity-text-epic { color: var(--epic); }
+.rarity-text-legendary { color: var(--legendary); }
+.rarity-text-mythic { color: var(--mythic); }
+.atk-color { color: #ff8a65; }
+.def-color { color: #64b5f6; }
+.gold-text { color: var(--accent); }
+.scrollable { overflow-y: auto; }
+.separator { height: 1px; background: var(--border2); margin: 6px 0; }
+.empty-state { text-align: center; color: var(--text3); font-size: 13px; padding: 30px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- MAIN MENU -->
+<div id="screen-menu" class="screen">
+  <div class="menu-glow"></div>
+  <div class="menu-title">ARCANE FORGE</div>
+  <div style="color:var(--text3);font-size:12px;letter-spacing:2px;margin-bottom:5px;text-align:center;">by Felix Hanschke</div>
+  <div class="menu-sub">Das Sammelkartenspiel</div>
+  <button class="menu-btn primary" onclick="Game.newGame()">⚗ Neues Spiel</button>
+  <button class="menu-btn" onclick="Game.loadGame()">📂 Laden</button>
+  <button class="menu-btn" onclick="showScreen('screen-settings');UI.updateHud()">⚙ Einstellungen</button>
+  <div class="menu-version">v2.0 – Arcane Forge by Felix Hanschke</div>
+</div>
+
+<!-- MAP SCREEN -->
+<div id="screen-map" class="screen">
+  <div class="topbar">
+    <div class="topbar-title">🗺 Weltkarte</div>
+    <div class="xp-bar-row">
+      <span class="level-badge" id="map-level">Lv.1</span>
+      <div class="xp-bar-outer"><div class="xp-bar-inner" id="map-xpbar" style="width:0%"></div></div>
+      <span style="font-size:11px;color:var(--accent);" id="map-gold">💰0</span>
+    </div>
+  </div>
+  <div class="map-content" id="map-content"></div>
+  <div class="navbar">
+    <button class="nav-btn active" onclick="showScreen('screen-map')">
+      <span class="nav-btn-icon">🗺</span>Karte
+    </button>
+    <button class="nav-btn" onclick="showScreen('screen-collection');UI.renderCollection()">
+      <span class="nav-btn-icon">📚</span>Sammlung
+    </button>
+    <button class="nav-btn" onclick="showScreen('screen-deck');UI.renderDeckEditor()">
+      <span class="nav-btn-icon">🃏</span>Deck
+    </button>
+    <button class="nav-btn" onclick="showScreen('screen-combo');UI.renderCombo()">
+      <span class="nav-btn-icon">⚗</span>Labor
+    </button>
+    <button class="nav-btn" onclick="showScreen('screen-settings')">
+      <span class="nav-btn-icon">⚙</span>Optionen
+    </button>
+  </div>
+</div>
+
+<!-- ENEMIES SCREEN -->
+<div id="screen-enemies" class="screen">
+  <div class="topbar">
+    <button class="topbar-back" onclick="showScreen('screen-map')">‹</button>
+    <div class="topbar-title" id="enemies-region-title">Region</div>
+    <div></div>
+  </div>
+  <div class="enemies-list" id="enemies-list"></div>
+</div>
+
+<!-- BATTLE SCREEN -->
+<div id="screen-battle" class="screen">
+  <div class="topbar" style="min-height:44px;padding:6px 12px;">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span class="phase-indicator" id="battle-phase">SPIELER</span>
+      <span id="no-atk-badge" class="no-atk-badge" style="display:none">⛔ Kein Angriff</span>
+    </div>
+    <div style="font-size:13px;font-weight:700;color:var(--text);" id="battle-turn">Zug 1</div>
+    <div style="font-size:11px;color:var(--text2);" id="battle-cards-left">Deck: 0</div>
+  </div>
+  <div class="battle-area">
+    <div class="hp-row">
+      <span class="hp-label" id="enemy-name-label">Feind</span>
+      <div class="hp-bar-outer"><div class="hp-bar-inner" id="enemy-hp-bar" style="width:100%;background:var(--red)"></div></div>
+      <span class="hp-num" id="enemy-hp-num">30/30</span>
+    </div>
+    <div class="battle-field">
+      <div class="field-row" id="enemy-field"></div>
+      <div class="field-row" id="player-field"></div>
+    </div>
+    <div class="hp-row">
+      <span class="hp-label" style="text-align:left;color:var(--accent);font-weight:700;" id="player-hp-label">Du</span>
+      <div class="hp-bar-outer"><div class="hp-bar-inner" id="player-hp-bar" style="width:100%;background:var(--green)"></div></div>
+      <span class="hp-num" id="player-hp-num">30/30</span>
+    </div>
+    <div class="battle-log" id="battle-log">Das Duell beginnt...</div>
+  </div>
+  <!-- Kombinations-Hinweise -->
+  <div class="combo-hint-strip" id="combo-hint-strip">
+    <span style="font-size:10px;color:var(--text3)">Keine Kombinationen in der Hand</span>
+  </div>
+  <div class="battle-hand" id="battle-hand"></div>
+  <div class="battle-actions">
+    <button class="battle-btn" id="btn-play" onclick="Battle.playCard()">▶ Karte spielen</button>
+    <button class="battle-btn btn-combo" id="btn-combo" onclick="Battle.startCombo()">⚗ Kombinieren</button>
+    <button class="battle-btn" id="btn-attack" onclick="Battle.attack()">⚔ Angreifen</button>
+    <button class="battle-btn btn-end" id="btn-endturn" onclick="Battle.endTurn()">Zug enden ›</button>
+  </div>
+</div>
+
+<!-- COLLECTION SCREEN -->
+<div id="screen-collection" class="screen">
+  <div class="topbar">
+    <button class="topbar-back" onclick="showScreen('screen-map')">‹</button>
+    <div class="topbar-title">📚 Sammlung</div>
+    <div style="font-size:12px;color:var(--text2);" id="coll-count">0 Karten</div>
+  </div>
+  <div class="collection-filters" id="coll-filters">
+    <button class="filter-btn active" onclick="UI.filterColl('all')">Alle</button>
+    <button class="filter-btn" onclick="UI.filterColl('basis')">Basis</button>
+    <button class="filter-btn" onclick="UI.filterColl('endform')">Endformen</button>
+    <button class="filter-btn" onclick="UI.filterColl('common')">Gewöhnlich</button>
+    <button class="filter-btn" onclick="UI.filterColl('rare')">Selten</button>
+    <button class="filter-btn" onclick="UI.filterColl('epic')">Episch</button>
+    <button class="filter-btn" onclick="UI.filterColl('legendary')">Legendär</button>
+    <button class="filter-btn" onclick="UI.filterColl('mythic')">Mythisch</button>
+  </div>
+  <div class="card-grid" id="card-grid"></div>
+</div>
+
+<!-- DECK SCREEN -->
+<div id="screen-deck" class="screen">
+  <div class="topbar">
+    <button class="topbar-back" onclick="showScreen('screen-map')">‹</button>
+    <div class="topbar-title">🃏 Deck-Editor</div>
+    <div class="deck-count" id="deck-count">0/35</div>
+  </div>
+  <div class="deck-split">
+    <div class="deck-top">
+      <div class="section-label">Aktuelles Deck</div>
+      <div class="deck-list" id="deck-list"></div>
+    </div>
+    <div class="deck-bottom">
+      <div class="section-label">Sammlung – Hinzufügen</div>
+      <div class="card-grid" id="deck-coll-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- COMBO LAB -->
+<div id="screen-combo" class="screen">
+  <div class="topbar">
+    <button class="topbar-back" onclick="showScreen('screen-map')">‹</button>
+    <div class="topbar-title">⚗ Kombinations-Labor</div>
+    <div style="font-size:12px;color:var(--text2);" id="combo-count">0 entdeckt</div>
+  </div>
+  <div class="combo-area">
+    <div class="combo-slots" id="combo-slots">
+      <div class="combo-slot" id="combo-slot-1" onclick="UI.openComboCardPick(1)">
+        <span style="font-size:24px;">?</span><span>Karte 1</span>
+      </div>
+      <div class="combo-plus">+</div>
+      <div class="combo-slot" id="combo-slot-2" onclick="UI.openComboCardPick(2)">
+        <span style="font-size:24px;">?</span><span>Karte 2</span>
+      </div>
+      <div class="combo-plus">=</div>
+      <div class="combo-result combo-result-unknown" id="combo-result-preview">
+        <div class="combo-result-label">Ergebnis</div>
+        <div class="combo-result-emoji">🔮</div>
+        <div class="combo-result-name">?</div>
+      </div>
+    </div>
+    <button class="combo-btn" id="combo-forge-btn" onclick="UI.forgeCombo()" disabled>⚗ Kombinieren</button>
+    <div class="section-label">Entdeckte Kombinationen</div>
+    <div id="combo-discovered-list"></div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div id="screen-settings" class="screen">
+  <div class="topbar">
+    <button class="topbar-back" onclick="showScreen('screen-map')">‹</button>
+    <div class="topbar-title">⚙ Einstellungen</div>
+    <div></div>
+  </div>
+  <div class="settings-list">
+    <div class="settings-item">
+      <span class="settings-label">Spieler</span>
+      <span class="settings-value" id="settings-player-name">Magier</span>
+    </div>
+    <div class="settings-item" id="settings-level-item">
+      <span class="settings-label">Level</span>
+      <span class="settings-value" id="settings-level">1</span>
+    </div>
+    <div class="settings-item">
+      <span class="settings-label">Gold</span>
+      <span class="settings-value" id="settings-gold">0</span>
+    </div>
+    <div class="settings-item">
+      <span class="settings-label">Karten gesammelt</span>
+      <span class="settings-value" id="settings-cards">0</span>
+    </div>
+    <div class="settings-item">
+      <span class="settings-label">Kombinationen entdeckt</span>
+      <span class="settings-value" id="settings-combos">0</span>
+    </div>
+    <div class="settings-item">
+      <span class="settings-label">Kämpfe gewonnen</span>
+      <span class="settings-value" id="settings-wins">0</span>
+    </div>
+  </div>
+  <button class="settings-save-btn" onclick="Game.save()">💾 Speichern</button>
+  <button class="settings-save-btn" style="background:rgba(192,57,43,0.15);border-color:var(--red);color:#ef9a9a;margin:0 14px 14px;" onclick="Game.confirmReset()">🗑 Neustart</button>
+</div>
+
+<!-- CARD PICK OVERLAY -->
+<div id="overlay-cardpick">
+  <div class="topbar">
+    <button class="topbar-back" onclick="UI.closeCardPick()">✕</button>
+    <div class="topbar-title" id="cardpick-title">Karte wählen</div>
+    <div></div>
+  </div>
+  <div class="cardpick-grid" id="cardpick-grid"></div>
+</div>
+
+<!-- CARD DETAIL OVERLAY -->
+<div id="overlay-carddetail" onclick="UI.closeCardDetail()">
+  <div class="card-detail-box animate-slideup" onclick="event.stopPropagation()">
+    <div class="card-detail-emoji" id="detail-emoji">🔥</div>
+    <div class="card-detail-name" id="detail-name">Karte</div>
+    <div class="card-detail-rarity" id="detail-rarity">Gewöhnlich</div>
+    <div class="card-detail-type" id="detail-type">Basis</div>
+    <div class="card-detail-stats">
+      <div class="stat-box"><div class="stat-box-label">ATK</div><div class="stat-box-val atk-color" id="detail-atk">0</div></div>
+      <div class="stat-box"><div class="stat-box-label">DEF</div><div class="stat-box-val def-color" id="detail-def">0</div></div>
+    </div>
+    <div class="card-detail-ability" id="detail-ability-box" style="display:none">
+      <div class="card-detail-ability-label">Fähigkeit</div>
+      <div class="card-detail-ability-text" id="detail-ability"></div>
+    </div>
+    <div class="card-detail-desc" id="detail-desc"></div>
+    <div class="card-detail-combos" id="detail-combos"></div>
+    <button class="modal-btn2" style="width:100%;margin-top:4px;" onclick="UI.closeCardDetail()">Schließen</button>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="overlay-modal">
+  <div class="modal-box animate-slideup" id="modal-box">
+    <div class="modal-icon" id="modal-icon">⚔</div>
+    <div class="modal-title" id="modal-title">Titel</div>
+    <div class="modal-body" id="modal-body"></div>
+    <button class="modal-btn" id="modal-btn1" onclick="Game.modalAction1()">OK</button>
+    <button class="modal-btn2" id="modal-btn2" style="display:none" onclick="Game.modalAction2()">Abbrechen</button>
+  </div>
+</div>
+
+</div>
+<script>
+// ===== DATA =====
+const RARITY = {
+  common: { label: 'Gewöhnlich', mult: 1.0, color: '#888888' },
+  rare: { label: 'Selten', mult: 1.4, color: '#3b82f6' },
+  epic: { label: 'Episch', mult: 1.8, color: '#8b5cf6' },
+  legendary: { label: 'Legendär', mult: 2.5, color: '#f59e0b' },
+  mythic: { label: 'Mythisch', mult: 3.5, color: '#ef4444' }
+};
+
+const BASE_CARDS = [
+  { id:'feuer', name:'Feuer', emoji:'🔥', atk:6, def:2, rarity:'common', type:'element', desc:'Lodernde Flammen verbrennen alles.' },
+  { id:'wasser', name:'Wasser', emoji:'💧', atk:3, def:6, rarity:'common', type:'element', desc:'Fließendes Wasser schützt und heilt.' },
+  { id:'eis', name:'Eis', emoji:'❄', atk:4, def:5, rarity:'common', type:'element', desc:'Gefrierender Atem lähmt Feinde.' },
+  { id:'schatten', name:'Schatten', emoji:'🌑', atk:7, def:2, rarity:'rare', type:'element', desc:'Finsternis verbirgt dunkle Kräfte.' },
+  { id:'licht', name:'Licht', emoji:'✨', atk:5, def:5, rarity:'rare', type:'element', desc:'Strahlendes Licht blendet alle Bösen.' },
+  { id:'donner', name:'Donner', emoji:'⚡', atk:8, def:2, rarity:'rare', type:'element', desc:'Der Blitz schlägt schnell und vernichtend.' },
+  { id:'flug', name:'Flug', emoji:'🦅', atk:5, def:4, rarity:'common', type:'element', desc:'Schwingst du dich in die Lüfte.' },
+  { id:'ritter', name:'Ritter', emoji:'⚔', atk:5, def:7, rarity:'common', type:'kreatur', desc:'Schwer gepanzert, unerbittlich im Kampf.' },
+  { id:'troll', name:'Troll', emoji:'👹', atk:7, def:6, rarity:'rare', type:'kreatur', desc:'Wächter der alten Brücken.' },
+  { id:'drache', name:'Drache', emoji:'🐉', atk:9, def:5, rarity:'epic', type:'kreatur', desc:'König der Lüfte, Meister des Feuers.' },
+  { id:'geist', name:'Geist', emoji:'👻', atk:4, def:3, rarity:'common', type:'kreatur', desc:'Ein Geist aus der anderen Welt.' },
+  { id:'elfe', name:'Elfe', emoji:'🧝', atk:5, def:5, rarity:'rare', type:'kreatur', desc:'Anmutig und geschickt im Bogenschuss.' },
+  { id:'daemon', name:'Dämon', emoji:'😈', atk:8, def:4, rarity:'epic', type:'kreatur', desc:'Aus der Unterwelt beschworen.' },
+  { id:'gnom', name:'Gnom', emoji:'🧙', atk:3, def:4, rarity:'common', type:'kreatur', desc:'Klein aber weise, Meister der Runen.' },
+  { id:'draenei', name:'Draenei', emoji:'🌀', atk:6, def:6, rarity:'epic', type:'kreatur', desc:'Ein Wesen aus einer fremden Dimension.' },
+  { id:'lich', name:'Lich', emoji:'💀', atk:10, def:3, rarity:'legendary', type:'kreatur', desc:'Der unsterbliche Nekromant, Herr der Toten.' },
+];
+
+const COMBO_RECIPES = [
+  { id:'flammenOger', card1:'feuer', card2:'troll', name:'Flammenoger', emoji:'🔥👹', atk:18, def:14, rarity:'epic', ability:'Feuerstoß: Fügt 3 Bonusschaden zu', desc:'Ein Oger, den die Flammen des Vulkans geformt haben.' },
+  { id:'tiefseeDrache', card1:'wasser', card2:'drache', name:'Tiefseedrache', emoji:'🌊🐉', atk:18, def:16, rarity:'legendary', ability:'Tidenwelle: Weist 2 Schaden pro Zug ab', desc:'Aus den tiefsten Ozeanen der Urzeit aufgestiegen.' },
+  { id:'phantomFuerst', card1:'schatten', card2:'geist', name:'Phantomfürst', emoji:'🌑👻', atk:20, def:10, rarity:'legendary', ability:'Schattenschritt: Angriffe können nicht geblockt werden', desc:'Eine Seele aus reiner Dunkelheit, kaum wahrnehmbar.' },
+  { id:'sturmAdler', card1:'donner', card2:'flug', name:'Sturmadler', emoji:'⚡🦅', atk:22, def:9, rarity:'epic', ability:'Blitzangriff: Trifft zuerst in jeder Runde', desc:'Ein majestätischer Vogel, der Blitze schleudert.' },
+  { id:'eisRitter', card1:'eis', card2:'ritter', name:'Eisritter', emoji:'❄⚔', atk:14, def:20, rarity:'epic', ability:'Eispanzer: +3 DEF für 2 Runden', desc:'In Eis gehüllt, unzerstörbar wie ein Gletscher.' },
+  { id:'lichtElfe', card1:'licht', card2:'elfe', name:'Lichtelfe', emoji:'✨🧝', atk:15, def:15, rarity:'rare', ability:'Heilung: Regeneriert 2 LP des Spielers', desc:'Von heiligem Licht umhüllt, eine Hüterin des Waldes.' },
+  { id:'schattendaemon', card1:'schatten', card2:'daemon', name:'Schattendämon', emoji:'🌑😈', atk:26, def:10, rarity:'mythic', ability:'Seelenraub: Zieht 1 Karte extra', desc:'Ein Dämon der obersten Finsternis, gefürchtet in allen Welten.' },
+  { id:'runengnom', card1:'gnom', card2:'licht', name:'Runengnom', emoji:'🧙✨', atk:11, def:13, rarity:'rare', ability:'Runenmagie: Nächste Karte kostet kein Tempo', desc:'Ein erleuchteter Gnom mit magischen Runen an den Händen.' },
+  { id:'draeneiLich', card1:'draenei', card2:'lich', name:'Lichfürst Draenei', emoji:'🌀💀', atk:30, def:18, rarity:'mythic', ability:'Untod: Wird beim ersten Besiegen wiederbelebt', desc:'Der mächtigste Untote, der je existiert hat.' },
+  { id:'feuerDrache', card1:'feuer', card2:'drache', name:'Feuerdrachenlord', emoji:'🔥🐉', atk:24, def:12, rarity:'legendary', ability:'Flammeninferno: Verbrennt alle Feinde gleichzeitig', desc:'Der uralte Feuerdrache, Zerstörer von Königreichen.' },
+  { id:'eisGeist', card1:'eis', card2:'geist', name:'Frostgeist', emoji:'❄👻', atk:12, def:12, rarity:'rare', ability:'Einfrieren: Feind überspringt nächsten Zug', desc:'Ein Geist aus dem ewigen Frost, der alles erstarren lässt.' },
+  { id:'donnerTroll', card1:'donner', card2:'troll', name:'Gewittertroll', emoji:'⚡👹', atk:22, def:16, rarity:'epic', ability:'Donnerbrülle: Reduziert feindliche DEF um 2', desc:'Ein Troll, der von Blitzen durchzuckt wird.' },
+  { id:'wasserElfe', card1:'wasser', card2:'elfe', name:'Meeresnymphe', emoji:'💧🧝', atk:13, def:17, rarity:'rare', ability:'Heilstrom: Heilt 3 LP wenn sie das Feld betritt', desc:'Eine anmutige Elfe der Ozeane und Flüsse.' },
+  { id:'lichtRitter', card1:'licht', card2:'ritter', name:'Paladin des Lichts', emoji:'✨⚔', atk:17, def:18, rarity:'epic', ability:'Heiliger Schild: Absorbiert einmal Schaden vollständig', desc:'Ein heiliger Krieger, gesegnet vom Gott des Lichts.' },
+  { id:'schattengnom', card1:'schatten', card2:'gnom', name:'Dunkelgnom', emoji:'🌑🧙', atk:16, def:11, rarity:'rare', ability:'Unsichtbarkeit: Kann nicht als Ziel gewählt werden', desc:'Ein Gnom der dunklen Künste, Meister der Illusion.' },
+  { id:'feuerElfe', card1:'feuer', card2:'elfe', name:'Flammenelfe', emoji:'🔥🧝', atk:18, def:12, rarity:'epic', ability:'Feuerpfeil: Verursacht 2 direkten Schaden', desc:'Eine Elfe, deren Pfeile in Flammen stehen.' },
+  { id:'eisDaemon', card1:'eis', card2:'daemon', name:'Frostdämon', emoji:'❄😈', atk:20, def:14, rarity:'legendary', ability:'Absoluter Frost: Verringert alle feindlichen ATK um 2', desc:'Ein Dämon aus den tiefsten Eisgrotten der Unterwelt.' },
+  { id:'wasserGeist', card1:'wasser', card2:'geist', name:'Wassergeist', emoji:'💧👻', atk:10, def:15, rarity:'rare', ability:'Spiegelung: Reflektiert 1 Schaden', desc:'Ein Geist, der in stillen Wassern lebt.' },
+  { id:'donnerDrache', card1:'donner', card2:'drache', name:'Sturmdrache', emoji:'⚡🐉', atk:26, def:14, rarity:'mythic', ability:'Blitzsturm: Greift alle Feinde auf dem Feld an', desc:'Der mächtigste Drache des Himmels.' },
+  { id:'flugLich', card1:'flug', card2:'lich', name:'Todesgreif', emoji:'🦅💀', atk:24, def:10, rarity:'legendary', ability:'Seelenernter: Tötet eine weitere feindliche Karte', desc:'Halb Greif, halb Toter, eine Kreatur des Endes.' },
+  { id:'trollDaemon', card1:'troll', card2:'daemon', name:'Höllenoger', emoji:'👹😈', atk:24, def:18, rarity:'legendary', ability:'Dämonenwut: +5 ATK wenn HP unter 15', desc:'Ein Troll, der dem Teufel seine Seele verkauft hat.' },
+  { id:'draeneiElfe', card1:'draenei', card2:'elfe', name:'Sternenweberin', emoji:'🌀🧝', atk:17, def:16, rarity:'epic', ability:'Sternenmagie: Zieht 2 Karten', desc:'Eine Elfe aus einer anderen Welt, Meisterin der Sternmagie.' },
+  { id:'feuerGnom', card1:'feuer', card2:'gnom', name:'Pyromant', emoji:'🔥🧙', atk:16, def:8, rarity:'rare', ability:'Feuerbombe: Verursacht 3 Schaden beim Erscheinen', desc:'Ein kleiner Gnom mit großer Leidenschaft für Feuer.' },
+  { id:'wasserRitter', card1:'wasser', card2:'ritter', name:'Meeresritter', emoji:'💧⚔', atk:14, def:21, rarity:'epic', ability:'Wellenpanzer: Halbiert eingehenden Schaden einmal', desc:'Ein Ritter der Meere, sein Schild ist aus Korallenriff.' },
+  { id:'schattenFlug', card1:'schatten', card2:'flug', name:'Nachtfalke', emoji:'🌑🦅', atk:19, def:9, rarity:'rare', ability:'Nachttaucher: Greift zweimal an', desc:'Ein Vogel des ewigen Schattens, schnell wie die Dunkelheit.' },
+  { id:'lichLicht', card1:'lich', card2:'licht', name:'Heiliger Verderber', emoji:'💀✨', atk:22, def:16, rarity:'mythic', ability:'Heilige Vernichtung: Zerstört eine feindliche Karte sofort', desc:'Eine Paradoxie aus Leben und Tod, allein sein Anblick tötet.' },
+  { id:'trollRitter', card1:'troll', card2:'ritter', name:'Urkrieger', emoji:'👹⚔', atk:19, def:19, rarity:'epic', ability:'Unzerbrechlich: Erleidet nie mehr als 6 Schaden pro Treffer', desc:'Ein Troll, der die Kriegskunst der Menschen erlernt hat.' },
+  { id:'eisDrache', card1:'eis', card2:'drache', name:'Gletscherdrache', emoji:'❄🐉', atk:20, def:19, rarity:'legendary', ability:'Eishauch: Friert Feinde für 1 Runde ein', desc:'Ein uralter Drache aus dem ewigen Eis der Polarregion.' },
+  { id:'donnerGnom', card1:'donner', card2:'gnom', name:'Gewittergnom', emoji:'⚡🧙', atk:18, def:10, rarity:'rare', ability:'Statikfeld: Feindliche ATK -1 für 2 Runden', desc:'Ein Gnom, der die Kraft des Blitzes kanalisiert.' },
+  { id:'flugElfe', card1:'flug', card2:'elfe', name:'Himmelselfe', emoji:'🦅🧝', atk:16, def:14, rarity:'rare', ability:'Luftstoß: Schiebt Feinde zurück, überspringen einen Zug', desc:'Eine Elfe, die auf Adlern durch die Wolken reitet.' },
+];
+
+const REGIONS = [
+  { id:'anfaenger', name:'Anfängergebiet', emoji:'🌾', desc:'Sanfte Hügel und einfache Feinde.', minLevel:1, bg:'#1a2a10',
+    enemies:[
+      { id:'goblin', name:'Waldgoblin', emoji:'👺', hp:20, deck:['feuer','wasser','gnom','gnom'], reward:{ xp:30, gold:10, cards:['wasser','gnom'] }, type:'normal', diff:1 },
+      { id:'kobold', name:'Koboldschurke', emoji:'🧌', hp:25, deck:['eis','feuer','troll','ritter'], reward:{ xp:50, gold:15, cards:['feuer','ritter'] }, type:'normal', diff:2 },
+      { id:'waldtroll', name:'Waldtroll', emoji:'👹', hp:35, deck:['troll','troll','feuer','wasser','ritter'], reward:{ xp:80, gold:25, cards:['troll','eisRitter'] }, type:'elite', diff:3 },
+    ]
+  },
+  { id:'wald', name:'Waldregion', emoji:'🌲', desc:'Dunkle Wälder voller alter Geheimnisse.', minLevel:3, bg:'#0d2010',
+    enemies:[
+      { id:'waldelfe', name:'Dunkelelfe', emoji:'🧝', hp:30, deck:['schatten','elfe','elfe','licht','feuer'], reward:{ xp:70, gold:20, cards:['elfe','lichtElfe'] }, type:'normal', diff:2 },
+      { id:'baumgeist', name:'Waldgeist', emoji:'👻', hp:28, deck:['geist','wasser','elfe','geist'], reward:{ xp:60, gold:18, cards:['geist','wasserGeist'] }, type:'normal', diff:2 },
+      { id:'walddrache', name:'Walddrache', emoji:'🐉', hp:45, deck:['drache','feuer','feuer','troll','ritter','schatten'], reward:{ xp:130, gold:40, cards:['drache','feuerDrache'] }, type:'boss', diff:4 },
+    ]
+  },
+  { id:'eis', name:'Eisregion', emoji:'❄', desc:'Ewiger Frost und schneidende Winde.', minLevel:5, bg:'#0d1a2a',
+    enemies:[
+      { id:'eiswolf', name:'Eiswolf', emoji:'🐺', hp:35, deck:['eis','eis','flug','donner'], reward:{ xp:90, gold:28, cards:['eis','sturmAdler'] }, type:'normal', diff:3 },
+      { id:'frosttroll', name:'Frosttroll', emoji:'👹', hp:40, deck:['eis','troll','troll','eis','ritter'], reward:{ xp:110, gold:35, cards:['eisRitter','troll'] }, type:'elite', diff:3 },
+      { id:'eisdrache', name:'Gletscherdrache', emoji:'🐉', hp:60, deck:['drache','eis','eis','eis','donner','wasser'], reward:{ xp:200, gold:65, cards:['eisDrache','donner'] }, type:'boss', diff:5 },
+    ]
+  },
+  { id:'vulkan', name:'Vulkanregion', emoji:'🌋', desc:'Lava und Asche, Heimat der Feuerbestien.', minLevel:8, bg:'#2a0d0d',
+    enemies:[
+      { id:'lavadaemon', name:'Lava-Dämon', emoji:'😈', hp:40, deck:['daemon','feuer','feuer','troll','donner'], reward:{ xp:120, gold:38, cards:['daemon','flammenOger'] }, type:'normal', diff:4 },
+      { id:'feuerriese', name:'Feuerriese', emoji:'🔥', hp:55, deck:['feuer','feuer','drache','troll','troll','ritter'], reward:{ xp:160, gold:50, cards:['feuer','feuerDrache'] }, type:'elite', diff:4 },
+      { id:'vulkanherr', name:'Herr des Vulkans', emoji:'🌋', hp:80, deck:['drache','daemon','feuer','feuer','donner','schatten','lich'], reward:{ xp:300, gold:100, cards:['feuerDrache','schattendaemon'] }, type:'boss', diff:6 },
+    ]
+  },
+  { id:'schatten', name:'Schattenreich', emoji:'🌑', desc:'Ewige Finsternis, wo Dämonen regieren.', minLevel:12, bg:'#0d0d1a',
+    enemies:[
+      { id:'schattenassel', name:'Schattenassassin', emoji:'🗡', hp:45, deck:['schatten','schatten','daemon','flug','geist'], reward:{ xp:150, gold:48, cards:['phantomFuerst','schattenFlug'] }, type:'normal', diff:4 },
+      { id:'finsterfuerst', name:'Finsterfürst', emoji:'😈', hp:65, deck:['daemon','lich','schatten','draenei','schatten'], reward:{ xp:220, gold:70, cards:['schattendaemon','draenei'] }, type:'elite', diff:5 },
+      { id:'schattenkoenig', name:'König der Schatten', emoji:'👑', hp:100, deck:['lich','daemon','daemon','schatten','schatten','draenei','geist','phantomFuerst'], reward:{ xp:450, gold:150, cards:['draeneiLich','lichLicht'] }, type:'boss', diff:7 },
+    ]
+  },
+  { id:'himmel', name:'Himmelsreich', emoji:'☁', desc:'Das Reich der Götter, letzte Prüfung.', minLevel:18, bg:'#1a1a2a',
+    enemies:[
+      { id:'himmelsritter', name:'Himmelsritter', emoji:'⚔', hp:55, deck:['licht','ritter','flug','elfe','donner'], reward:{ xp:200, gold:65, cards:['paladin','lichtElfe'] }, type:'normal', diff:5 },
+      { id:'sturmgott', name:'Sturmgott', emoji:'⛈', hp:80, deck:['donner','drache','flug','flug','draenei','donner'], reward:{ xp:300, gold:95, cards:['sturmDrache','tiefseeDrache'] }, type:'elite', diff:6 },
+      { id:'urdrache', name:'Urdrachengott', emoji:'🐉', hp:130, deck:['drache','lich','draenei','donner','feuer','eis','schatten','licht','sturmDrache'], reward:{ xp:600, gold:200, cards:['donnerDrache','flugLich'] }, type:'boss', diff:8 },
+    ]
+  },
+];
+
+// ===== GAME STATE =====
+const State = {
+  player: { name:'Magier', hp:30, maxHp:30, level:1, xp:0, xpNext:100, gold:0, wins:0 },
+  deck: ['feuer','wasser','feuer','wasser','eis','ritter','troll','gnom','licht','schatten'],
+  collection: { feuer:3, wasser:3, eis:2, ritter:2, gnom:2, troll:1, licht:1, schatten:1, elfe:1, flug:1 },
+  discoveredCombos: [],
+  defeatedEnemies: [],
+  currentRegion: null,
+  currentEnemy: null,
+};
+
+// ===== UTILITY =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) { el.classList.add('active'); el.classList.add('animate-fadein'); }
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const map = {
+    'screen-map': 0, 'screen-collection': 1, 'screen-deck': 2, 'screen-combo': 3, 'screen-settings': 4
+  };
+  if (map[id] !== undefined) {
+    const navBtns = document.querySelectorAll('.nav-btn');
+    if (navBtns[map[id]]) navBtns[map[id]].classList.add('active');
+  }
+}
+
+function getCard(id) {
+  const base = BASE_CARDS.find(c => c.id === id);
+  if (base) return { ...base, isEndform: false };
+  const combo = COMBO_RECIPES.find(c => c.id === id);
+  if (combo) return { ...combo, isEndform: true, type:'endform' };
+  return null;
+}
+
+function rarityClass(r) { return r || 'common'; }
+
+function rarityColor(r) { return (RARITY[r] || RARITY.common).color; }
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ===== GAME LOGIC =====
+const Game = {
+  modalCb1: null, modalCb2: null,
+  newGame() {
+    const name = prompt('Wie lautet dein Name, Magier?', 'Aldric') || 'Magier';
+    State.player.name = name;
+    State.player.hp = 30; State.player.maxHp = 30;
+    State.player.level = 1; State.player.xp = 0; State.player.xpNext = 100;
+    State.player.gold = 0; State.player.wins = 0;
+    State.deck = ['feuer','wasser','feuer','wasser','eis','ritter','troll','gnom','licht','schatten'];
+    State.collection = { feuer:3, wasser:3, eis:2, ritter:2, gnom:2, troll:1, licht:1, schatten:1, elfe:1, flug:1 };
+    State.discoveredCombos = [];
+    State.defeatedEnemies = [];
+    this.save();
+    showScreen('screen-map');
+    UI.renderMap();
+    UI.updateHud();
+  },
+  save() {
+    localStorage.setItem('arcane_forge_save', JSON.stringify({
+      player: State.player, deck: State.deck,
+      collection: State.collection, discoveredCombos: State.discoveredCombos,
+      defeatedEnemies: State.defeatedEnemies
+    }));
+    UI.showToast('💾 Gespeichert!');
+  },
+  loadGame() {
+    const raw = localStorage.getItem('arcane_forge_save');
+    if (!raw) { Game.showModal('📂', 'Kein Spielstand', 'Es wurde kein Spielstand gefunden. Starte ein neues Spiel!', 'Neues Spiel', null, () => Game.newGame()); return; }
+    const s = JSON.parse(raw);
+    Object.assign(State.player, s.player || {});
+    State.deck = s.deck || [];
+    State.collection = s.collection || {};
+    State.discoveredCombos = s.discoveredCombos || [];
+    State.defeatedEnemies = s.defeatedEnemies || [];
+    showScreen('screen-map');
+    UI.renderMap();
+    UI.updateHud();
+  },
+  confirmReset() {
+    Game.showModal('⚠', 'Neustart?', 'Dein gesamter Fortschritt wird gelöscht. Bist du sicher?',
+      'Ja, neu starten', 'Abbrechen', () => { localStorage.clear(); location.reload(); }, () => {});
+  },
+  addXp(amount) {
+    State.player.xp += amount;
+    while (State.player.xp >= State.player.xpNext) {
+      State.player.xp -= State.player.xpNext;
+      State.player.level++;
+      State.player.xpNext = Math.floor(100 * Math.pow(1.35, State.player.level - 1));
+      State.player.maxHp = 30 + (State.player.level - 1) * 3;
+      State.player.hp = State.player.maxHp;
+      Game.showModal('🎉', 'Level Up!', `Du bist jetzt Level ${State.player.level}!\nMax HP: ${State.player.maxHp}`, 'Weiter', null, () => {});
+    }
+  },
+  addCard(cardId) {
+    if (!State.collection[cardId]) State.collection[cardId] = 0;
+    State.collection[cardId]++;
+  },
+  showModal(icon, title, body, btn1, btn2, cb1, cb2) {
+    document.getElementById('modal-icon').textContent = icon;
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-body').innerHTML = body ? body.replace(/\n/g,'<br>') : '';
+    document.getElementById('modal-btn1').textContent = btn1 || 'OK';
+    const btn2El = document.getElementById('modal-btn2');
+    if (btn2) { btn2El.style.display = ''; btn2El.textContent = btn2; }
+    else btn2El.style.display = 'none';
+    this.modalCb1 = cb1 || null;
+    this.modalCb2 = cb2 || null;
+    document.getElementById('overlay-modal').classList.add('visible');
+  },
+  modalAction1() {
+    document.getElementById('overlay-modal').classList.remove('visible');
+    if (this.modalCb1) this.modalCb1();
+  },
+  modalAction2() {
+    document.getElementById('overlay-modal').classList.remove('visible');
+    if (this.modalCb2) this.modalCb2();
+  },
+};
+
+// ===== UI =====
+const UI = {
+  collFilter: 'all',
+  comboSlot1: null, comboSlot2: null,
+  cardPickMode: null,
+
+  updateHud() {
+    const p = State.player;
+    document.getElementById('map-level').textContent = `Lv.${p.level}`;
+    const xpPct = Math.round((p.xp / p.xpNext) * 100);
+    document.getElementById('map-xpbar').style.width = xpPct + '%';
+    document.getElementById('map-gold').textContent = `💰${p.gold}`;
+    document.getElementById('settings-player-name').textContent = p.name;
+    document.getElementById('settings-level').textContent = p.level;
+    document.getElementById('settings-gold').textContent = p.gold;
+    document.getElementById('settings-cards').textContent = Object.values(State.collection).reduce((a,b)=>a+b,0);
+    document.getElementById('settings-combos').textContent = State.discoveredCombos.length;
+    document.getElementById('settings-wins').textContent = p.wins;
+  },
+
+  renderMap() {
+    const el = document.getElementById('map-content');
+    el.innerHTML = '';
+    REGIONS.forEach(r => {
+      const defeated = r.enemies.filter(e => State.defeatedEnemies.includes(r.id + '_' + e.id)).length;
+      const total = r.enemies.length;
+      const locked = State.player.level < r.minLevel;
+      const done = defeated === total;
+      const div = document.createElement('div');
+      div.className = 'region-card' + (locked ? ' locked' : '');
+      div.innerHTML = `
+        <div class="region-icon">${r.emoji}</div>
+        <div class="region-info">
+          <div class="region-name">${r.name}</div>
+          <div class="region-desc">${r.desc}</div>
+          <div class="region-progress">${defeated}/${total} Kämpfe gewonnen${locked ? ` · Ab Level ${r.minLevel}` : ''}</div>
+        </div>
+        <div class="region-badge${done ? ' done' : ''}">${done ? '✓' : defeated + '/' + total}</div>`;
+      if (!locked) div.onclick = () => UI.showRegion(r);
+      el.appendChild(div);
+    });
+  },
+
+  showRegion(region) {
+    State.currentRegion = region;
+    document.getElementById('enemies-region-title').textContent = region.emoji + ' ' + region.name;
+    const el = document.getElementById('enemies-list');
+    el.innerHTML = '';
+    region.enemies.forEach(e => {
+      const key = region.id + '_' + e.id;
+      const defeated = State.defeatedEnemies.includes(key);
+      const div = document.createElement('div');
+      div.className = 'enemy-card' + (defeated ? ' defeated' : '');
+      const typeLabel = { normal:'Normal', elite:'Elite', boss:'Boss' }[e.type] || 'Normal';
+      const typeCls = { normal:'badge-normal', elite:'badge-elite', boss:'badge-boss' }[e.type] || '';
+      let stars = '★'.repeat(e.diff) + '☆'.repeat(Math.max(0, 8 - e.diff));
+      div.innerHTML = `
+        <div class="enemy-portrait">${e.emoji}</div>
+        <div class="enemy-info">
+          <span class="enemy-type-badge ${typeCls}">${typeLabel}</span>
+          <div class="enemy-name">${e.name}${defeated ? ' ✓' : ''}</div>
+          <div class="enemy-stats">HP: ${e.hp} · Deck: ${e.deck.length} Karten</div>
+          <div class="enemy-reward">XP: ${e.reward.xp} · Gold: ${e.reward.gold}</div>
+        </div>
+        <div class="difficulty-stars">${stars}</div>`;
+      div.onclick = () => Battle.start(region, e);
+      el.appendChild(div);
+    });
+    showScreen('screen-enemies');
+  },
+
+  renderCollection(filter) {
+    if (filter !== undefined) this.collFilter = filter;
+    const f = this.collFilter;
+    let cards = [];
+    Object.keys(State.collection).forEach(id => {
+      if (State.collection[id] > 0) {
+        const c = getCard(id);
+        if (c) cards.push({ ...c, count: State.collection[id] });
+      }
+    });
+    if (f === 'basis') cards = cards.filter(c => !c.isEndform);
+    else if (f === 'endform') cards = cards.filter(c => c.isEndform);
+    else if (['common','rare','epic','legendary','mythic'].includes(f)) cards = cards.filter(c => c.rarity === f);
+    document.getElementById('coll-count').textContent = cards.length + ' Karten';
+    const grid = document.getElementById('card-grid');
+    grid.innerHTML = '';
+    cards.forEach(c => {
+      const div = this._buildCollCard(c, c.count);
+      div.onclick = () => UI.showCardDetail(c);
+      grid.appendChild(div);
+    });
+    document.querySelectorAll('#coll-filters .filter-btn').forEach(b => {
+      const bf = b.getAttribute('onclick').match(/'([^']+)'/);
+      if (bf && bf[1] === this.collFilter) b.classList.add('active');
+      else b.classList.remove('active');
+    });
+  },
+
+  filterColl(f) { this.renderCollection(f); },
+
+  _buildCollCard(c, count) {
+    const div = document.createElement('div');
+    div.className = `coll-card ${rarityClass(c.rarity)}`;
+    div.innerHTML = `
+      <div class="rarity-dot rarity-${rarityClass(c.rarity)}"></div>
+      ${count > 1 ? `<div class="count-badge">x${count}</div>` : ''}
+      <div class="coll-card-emoji">${c.emoji}</div>
+      <div class="coll-card-name">${c.name}</div>
+      <div class="coll-card-type">${c.isEndform ? 'Endform' : c.type}</div>
+      <div class="coll-card-stats">
+        <span class="atk-color">⚔${c.atk}</span>
+        <span class="def-color">🛡${c.def}</span>
+      </div>`;
+    return div;
+  },
+
+  showCardDetail(card) {
+    document.getElementById('detail-emoji').textContent = card.emoji;
+    document.getElementById('detail-name').textContent = card.name;
+    const rarityLabel = (RARITY[card.rarity] || RARITY.common).label;
+    const rColor = rarityColor(card.rarity);
+    document.getElementById('detail-rarity').textContent = rarityLabel;
+    document.getElementById('detail-rarity').style.color = rColor;
+    document.getElementById('detail-type').textContent = card.isEndform ? 'Endform-Karte' : ('Basiskarte · ' + (card.type || ''));
+    document.getElementById('detail-atk').textContent = card.atk;
+    document.getElementById('detail-def').textContent = card.def;
+    const abilBox = document.getElementById('detail-ability-box');
+    if (card.ability) { abilBox.style.display = ''; document.getElementById('detail-ability').textContent = card.ability; }
+    else abilBox.style.display = 'none';
+    document.getElementById('detail-desc').textContent = card.desc || '';
+    // Show combos
+    const combosEl = document.getElementById('detail-combos');
+    if (!card.isEndform) {
+      const related = COMBO_RECIPES.filter(r => r.card1 === card.id || r.card2 === card.id);
+      if (related.length > 0) {
+        combosEl.innerHTML = `<div class="card-detail-combos-label">Kombinationen (${related.length})</div>` +
+          related.map(r => {
+            const known = State.discoveredCombos.includes(r.id);
+            const other = r.card1 === card.id ? r.card2 : r.card1;
+            const oc = getCard(other);
+            return `<div class="combo-recipe-row">${card.emoji} + ${oc ? oc.emoji : '?'} = ${known ? r.emoji + ' ' + r.name : '???'}</div>`;
+          }).join('');
+      } else combosEl.innerHTML = '';
+    } else {
+      const recipe = COMBO_RECIPES.find(r => r.id === card.id);
+      if (recipe) {
+        const c1 = getCard(recipe.card1), c2 = getCard(recipe.card2);
+        combosEl.innerHTML = `<div class="card-detail-combos-label">Hergestellt aus</div><div class="combo-recipe-row">${c1 ? c1.emoji+' '+c1.name : '?'} + ${c2 ? c2.emoji+' '+c2.name : '?'}</div>`;
+      } else combosEl.innerHTML = '';
+    }
+    document.getElementById('overlay-carddetail').classList.add('visible');
+  },
+
+  closeCardDetail() { document.getElementById('overlay-carddetail').classList.remove('visible'); },
+
+  renderDeckEditor() {
+    const deckEl = document.getElementById('deck-list');
+    deckEl.innerHTML = '';
+    document.getElementById('deck-count').textContent = State.deck.length + '/35';
+    State.deck.forEach((id, idx) => {
+      const c = getCard(id);
+      if (!c) return;
+      const div = document.createElement('div');
+      div.className = 'deck-item';
+      div.innerHTML = `
+        <div class="deck-item-emoji">${c.emoji}</div>
+        <div class="deck-item-name">${c.name}</div>
+        <div class="deck-item-stats atk-color">⚔${c.atk} <span class="def-color">🛡${c.def}</span></div>
+        <div class="deck-item-remove" title="Entfernen">−</div>`;
+      div.querySelector('.deck-item-remove').onclick = () => {
+        State.deck.splice(idx, 1);
+        UI.renderDeckEditor();
+      };
+      deckEl.appendChild(div);
+    });
+    // Collection grid for adding
+    const grid = document.getElementById('deck-coll-grid');
+    grid.innerHTML = '';
+    Object.keys(State.collection).forEach(id => {
+      if (!State.collection[id]) return;
+      const c = getCard(id);
+      if (!c) return;
+      const inDeckCount = State.deck.filter(d => d === id).length;
+      const avail = State.collection[id] - inDeckCount;
+      const div = this._buildCollCard(c, avail);
+      if (avail <= 0) div.classList.add('in-deck');
+      div.onclick = () => {
+        if (avail <= 0) return;
+        if (State.deck.length >= 35) { UI.showToast('Deck ist voll! (35 Karten)'); return; }
+        State.deck.push(id);
+        UI.renderDeckEditor();
+      };
+      grid.appendChild(div);
+    });
+  },
+
+  renderCombo() {
+    document.getElementById('combo-count').textContent = State.discoveredCombos.length + ' entdeckt';
+    // Preview
+    const res = document.getElementById('combo-result-preview');
+    if (this.comboSlot1 && this.comboSlot2) {
+      const recipe = COMBO_RECIPES.find(r =>
+        (r.card1 === this.comboSlot1 && r.card2 === this.comboSlot2) ||
+        (r.card1 === this.comboSlot2 && r.card2 === this.comboSlot1)
+      );
+      if (recipe) {
+        const known = State.discoveredCombos.includes(recipe.id);
+        res.innerHTML = `
+          <div class="combo-result-label">Ergebnis</div>
+          <div class="combo-result-emoji">${recipe.emoji}</div>
+          <div class="combo-result-name">${recipe.name}</div>
+          <div class="combo-result-stats atk-color">⚔${recipe.atk} <span class="def-color">🛡${recipe.def}</span></div>
+          ${known ? '<div style="font-size:10px;color:var(--green)">✓ Bekannt</div>' : ''}`;
+        res.className = 'combo-result animate-combo';
+        document.getElementById('combo-forge-btn').disabled = false;
+      } else {
+        res.innerHTML = '<div class="combo-result-label">Keine Kombination</div><div class="combo-result-emoji">💥</div>';
+        res.className = 'combo-result';
+        document.getElementById('combo-forge-btn').disabled = true;
+      }
+    } else {
+      res.innerHTML = '<div class="combo-result-label">Ergebnis</div><div class="combo-result-emoji">🔮</div><div class="combo-result-name">?</div>';
+      res.className = 'combo-result combo-result-unknown';
+      document.getElementById('combo-forge-btn').disabled = true;
+    }
+    // Slots
+    const s1 = document.getElementById('combo-slot-1');
+    const s2 = document.getElementById('combo-slot-2');
+    if (this.comboSlot1) {
+      const c = getCard(this.comboSlot1);
+      s1.innerHTML = c ? `<div style="font-size:30px">${c.emoji}</div><div style="font-size:11px;color:var(--text)">${c.name}</div>` : '?';
+      s1.className = 'combo-slot filled';
+    } else {
+      s1.innerHTML = '<span style="font-size:24px">?</span><span>Karte 1</span>';
+      s1.className = 'combo-slot';
+      s1.onclick = () => UI.openComboCardPick(1);
+    }
+    if (this.comboSlot2) {
+      const c = getCard(this.comboSlot2);
+      s2.innerHTML = c ? `<div style="font-size:30px">${c.emoji}</div><div style="font-size:11px;color:var(--text)">${c.name}</div>` : '?';
+      s2.className = 'combo-slot filled';
+    } else {
+      s2.innerHTML = '<span style="font-size:24px">?</span><span>Karte 2</span>';
+      s2.className = 'combo-slot';
+      s2.onclick = () => UI.openComboCardPick(2);
+    }
+    // Discovered list
+    const list = document.getElementById('combo-discovered-list');
+    list.innerHTML = '';
+    if (State.discoveredCombos.length === 0) {
+      list.innerHTML = '<div class="empty-state">Noch keine Kombinationen entdeckt. Experimentiere im Labor!</div>';
+    }
+    State.discoveredCombos.forEach(id => {
+      const r = COMBO_RECIPES.find(c => c.id === id);
+      if (!r) return;
+      const c1 = getCard(r.card1), c2 = getCard(r.card2);
+      const div = document.createElement('div');
+      div.className = 'combo-disc-item';
+      div.innerHTML = `
+        <div class="combo-disc-emoji">${r.emoji}</div>
+        <div class="combo-disc-info">
+          <div class="combo-disc-name">${r.name} <span class="atk-color">⚔${r.atk}</span> <span class="def-color">🛡${r.def}</span></div>
+          <div class="combo-disc-recipe">${c1 ? c1.emoji+' '+c1.name : '?'} + ${c2 ? c2.emoji+' '+c2.name : '?'}</div>
+        </div>
+        <div style="font-size:10px;color:${rarityColor(r.rarity)}">${(RARITY[r.rarity]||RARITY.common).label}</div>`;
+      div.onclick = () => { const card = getCard(id); if (card) UI.showCardDetail(card); };
+      list.appendChild(div);
+    });
+  },
+
+  openComboCardPick(slot) {
+    this.cardPickMode = 'combo_' + slot;
+    document.getElementById('cardpick-title').textContent = slot === 1 ? 'Erste Karte' : 'Zweite Karte';
+    const grid = document.getElementById('cardpick-grid');
+    grid.innerHTML = '';
+    const available = [];
+    Object.keys(State.collection).forEach(id => {
+      if (State.collection[id] > 0) {
+        const c = getCard(id);
+        if (c && !c.isEndform) available.push(c);
+      }
+    });
+    available.forEach(c => {
+      const div = this._buildCollCard(c, State.collection[c.id]);
+      div.onclick = () => {
+        if (slot === 1) UI.comboSlot1 = c.id;
+        else UI.comboSlot2 = c.id;
+        UI.closeCardPick();
+        UI.renderCombo();
+      };
+      grid.appendChild(div);
+    });
+    document.getElementById('overlay-cardpick').classList.add('visible');
+  },
+
+  closeCardPick() {
+    document.getElementById('overlay-cardpick').classList.remove('visible');
+    this.cardPickMode = null;
+  },
+
+  forgeCombo() {
+    if (!this.comboSlot1 || !this.comboSlot2) return;
+    const recipe = COMBO_RECIPES.find(r =>
+      (r.card1 === this.comboSlot1 && r.card2 === this.comboSlot2) ||
+      (r.card1 === this.comboSlot2 && r.card2 === this.comboSlot1)
+    );
+    if (!recipe) return;
+    if (!State.discoveredCombos.includes(recipe.id)) {
+      State.discoveredCombos.push(recipe.id);
+      Game.addCard(recipe.id);
+      Game.showModal('⚗', 'Neue Kombination!', `${recipe.emoji} <b>${recipe.name}</b> wurde entdeckt!\n${recipe.desc}\n\n⚔ ATK: ${recipe.atk} · 🛡 DEF: ${recipe.def}\n\n<i>${recipe.ability}</i>`, 'Fantastisch!', null, () => {});
+    } else {
+      Game.addCard(recipe.id);
+      UI.showToast(`${recipe.emoji} ${recipe.name} der Sammlung hinzugefügt!`);
+    }
+    this.comboSlot1 = null; this.comboSlot2 = null;
+    UI.renderCombo();
+    Game.save();
+  },
+
+  showToast(msg) {
+    let t = document.getElementById('toast');
+    if (!t) { t = document.createElement('div'); t.id = 'toast'; Object.assign(t.style, {
+      position:'fixed', bottom:'80px', left:'50%', transform:'translateX(-50%)',
+      background:'#2a2a3a', border:'1px solid rgba(200,166,74,0.4)', color:'#e8e0cc',
+      padding:'10px 18px', borderRadius:'20px', fontSize:'13px', zIndex:9999,
+      transition:'opacity 0.3s', whiteSpace:'nowrap'
+    }); document.body.appendChild(t); }
+    t.textContent = msg; t.style.opacity = '1';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2000);
+  },
+};
+
+// ===== BATTLE ENGINE =====
+const Battle = {
+  playerHp: 30, enemyHp: 30, playerMaxHp: 30, enemyMaxHp: 30,
+  playerDeck: [], enemyDeck: [],
+  playerHand: [], enemyHand: [],
+  playerField: [], enemyField: [],
+  turn: 1, phase: 'player',
+  selectedHandIdx: -1,
+  combo1Idx: -1, combo2Idx: -1,
+  comboMode: false,
+  attackMode: false,
+  gameOver: false,
+  cardPlayedThisTurn: false,
+  enemy: null,
+
+  start(region, enemy) {
+    if (State.deck.length < 5) {
+      Game.showModal('⚠', 'Deck zu klein', 'Du brauchst mindestens 5 Karten im Deck. Füge mehr im Deck-Editor hinzu.', 'OK', null, () => {});
+      return;
+    }
+    this.enemy = enemy;
+    State.currentEnemy = enemy;
+    this.playerHp = State.player.maxHp;
+    this.enemyHp = enemy.hp;
+    this.playerMaxHp = State.player.maxHp;
+    this.enemyMaxHp = enemy.hp;
+    this.playerDeck = shuffle([...State.deck]);
+    this.enemyDeck = shuffle([...enemy.deck, ...enemy.deck]);
+    this.playerHand = []; this.enemyHand = [];
+    this.playerField = []; this.enemyField = [];
+    this.turn = 1; this.phase = 'player';
+    this.selectedHandIdx = -1; this.combo1Idx = -1; this.combo2Idx = -1;
+    this.comboMode = false; this.attackMode = false;
+    this.gameOver = false; this.cardPlayedThisTurn = false;
+    for (let i = 0; i < 4; i++) this._drawCard('player');
+    for (let i = 0; i < 3; i++) this._drawCard('enemy');
+    document.getElementById('enemy-name-label').textContent = enemy.name;
+    showScreen('screen-battle');
+    this._render();
+    this._log(`Duell gegen ${enemy.name} beginnt! Runde 1 – kein Angriff erlaubt.`);
+  },
+
+  _drawCard(who) {
+    if (who === 'player') {
+      if (this.playerDeck.length > 0) this.playerHand.push(this.playerDeck.pop());
+    } else {
+      if (this.enemyDeck.length > 0) this.enemyHand.push(this.enemyDeck.pop());
+    }
+  },
+
+  _render() {
+    document.getElementById('battle-turn').textContent = `Zug ${this.turn}`;
+    const isPlayer = this.phase === 'player';
+    document.getElementById('battle-phase').textContent = isPlayer ? 'DEIN ZUG' : 'GEGNER';
+    const noAtkBadge = document.getElementById('no-atk-badge');
+    if (noAtkBadge) noAtkBadge.style.display = (isPlayer && this.turn === 1) ? '' : 'none';
+    document.getElementById('battle-cards-left').textContent = `Deck: ${this.playerDeck.length}`;
+    const phpPct = Math.max(0, Math.round((this.playerHp / this.playerMaxHp) * 100));
+    const ehpPct = Math.max(0, Math.round((this.enemyHp / this.enemyMaxHp) * 100));
+    document.getElementById('player-hp-bar').style.width = phpPct + '%';
+    document.getElementById('player-hp-bar').style.background = phpPct > 50 ? 'var(--hp-full)' : phpPct > 25 ? 'var(--hp-mid)' : 'var(--hp-low)';
+    document.getElementById('player-hp-num').textContent = `${this.playerHp}/${this.playerMaxHp}`;
+    document.getElementById('enemy-hp-bar').style.width = ehpPct + '%';
+    document.getElementById('enemy-hp-num').textContent = `${this.enemyHp}/${this.enemyMaxHp}`;
+    this._renderField('enemy-field', this.enemyField, true);
+    this._renderField('player-field', this.playerField, false);
+    this._renderHand();
+    this._renderComboHints();
+    const active = isPlayer && !this.gameOver;
+    document.getElementById('btn-play').disabled = !(active && !this.cardPlayedThisTurn && this.selectedHandIdx >= 0);
+    document.getElementById('btn-combo').disabled = !(active && !this.cardPlayedThisTurn && this.playerHand.length >= 2);
+    document.getElementById('btn-attack').disabled = !(active && !this.attackMode && this.playerField.length > 0 && this.turn > 1);
+    document.getElementById('btn-endturn').disabled = !active;
+  },
+
+  _renderComboHints() {
+    const strip = document.getElementById('combo-hint-strip');
+    if (!strip) return;
+    const baseCards = this.playerHand.map((id, i) => ({ id, i })).filter(x => { const c = getCard(x.id); return c && !c.isEndform; });
+    const hints = [];
+    const seen = new Set();
+    for (let a = 0; a < baseCards.length; a++) {
+      for (let b = a + 1; b < baseCards.length; b++) {
+        const ia = baseCards[a].id, ib = baseCards[b].id;
+        const recipe = COMBO_RECIPES.find(r => (r.card1===ia&&r.card2===ib)||(r.card1===ib&&r.card2===ia));
+        if (recipe && !seen.has(recipe.id)) {
+          seen.add(recipe.id);
+          const ca = getCard(ia), cb = getCard(ib);
+          const known = State.discoveredCombos.includes(recipe.id);
+          hints.push(`<span class="combo-hint-item">${ca.emoji}+${cb.emoji}=<span class="combo-hint-result">${known ? recipe.emoji+' '+recipe.name : '???'}</span></span>`);
+        }
+      }
+    }
+    strip.innerHTML = hints.length > 0
+      ? `<span style="font-size:10px;color:#c4b0f0;font-weight:800;margin-right:8px;flex-shrink:0">⚗ Mögl. Kombis:</span>` + hints.join('')
+      : `<span style="font-size:10px;color:var(--text3)">Keine Kombinationen in der Hand</span>`;
+  },
+
+  _renderField(elId, field, isEnemy) {
+    const el = document.getElementById(elId);
+    el.innerHTML = '';
+    const maxSlots = 4;
+    for (let i = 0; i < maxSlots; i++) {
+      const slot = document.createElement('div');
+      if (field[i]) {
+        slot.className = 'field-slot occupied' + (isEnemy && this.attackMode ? ' target' : '') + (isEnemy ? ' enemy-slot' : '');
+        const c = field[i];
+        slot.innerHTML = `<div class="mini-card">
+          <div class="mini-card-emoji">${c.emoji}</div>
+          <div class="mini-card-name">${c.name.length > 12 ? c.name.substring(0,11)+'…' : c.name}</div>
+          <div class="mini-card-stats"><span class="mini-atk">⚔${c.atk}</span><span class="mini-def">🛡${c.def}</span></div>
+        </div>`;
+        if (isEnemy && this.attackMode) {
+          const idx = i;
+          slot.onclick = () => Battle._executeAttack(idx);
+        }
+      } else {
+        slot.className = 'field-slot' + (!isEnemy && this.attackMode ? '' : '');
+        slot.innerHTML = '<span style="font-size:11px;color:var(--text3)">·</span>';
+      }
+      el.appendChild(slot);
+    }
+  },
+
+  _renderHand() {
+    const el = document.getElementById('battle-hand');
+    el.innerHTML = '';
+    const baseIds = this.playerHand.map((id, i) => ({ id, i })).filter(x => { const c = getCard(x.id); return c && !c.isEndform; });
+    const hasComboSet = new Set();
+    for (let a = 0; a < baseIds.length; a++) {
+      for (let b = a + 1; b < baseIds.length; b++) {
+        const ia = baseIds[a].id, ib = baseIds[b].id;
+        if (COMBO_RECIPES.find(r => (r.card1===ia&&r.card2===ib)||(r.card1===ib&&r.card2===ia))) {
+          hasComboSet.add(baseIds[a].i); hasComboSet.add(baseIds[b].i);
+        }
+      }
+    }
+    this.playerHand.forEach((id, idx) => {
+      const c = getCard(id);
+      if (!c) return;
+      const div = document.createElement('div');
+      let cls = 'hand-card';
+      if (this.comboMode) {
+        if (idx === this.combo1Idx || idx === this.combo2Idx) cls += ' combo-selected';
+      } else {
+        if (idx === this.selectedHandIdx) cls += ' selected';
+      }
+      if (hasComboSet.has(idx) && !c.isEndform) cls += ' has-combo';
+      div.className = cls;
+      div.innerHTML = `<div class="hand-card-emoji">${c.emoji}</div><div class="hand-card-name">${c.name}</div><div class="hand-card-stats"><span class="mini-atk">⚔${c.atk}</span><span class="mini-def">🛡${c.def}</span></div>`;
+      div.onclick = () => Battle._selectHandCard(idx);
+      el.appendChild(div);
+    });
+  },
+
+  _selectHandCard(idx) {
+    if (this.phase !== 'player' || this.gameOver) return;
+    if (this.comboMode) {
+      if (this.combo1Idx < 0) { this.combo1Idx = idx; }
+      else if (idx !== this.combo1Idx) { this.combo2Idx = idx; }
+      if (this.combo1Idx >= 0 && this.combo2Idx >= 0) {
+        this._executeCombo();
+        return;
+      }
+    } else {
+      this.selectedHandIdx = this.selectedHandIdx === idx ? -1 : idx;
+    }
+    this._render();
+  },
+
+  playCard() {
+    if (this.selectedHandIdx < 0 || this.phase !== 'player' || this.gameOver) return;
+    if (this.cardPlayedThisTurn) { this._log('Nur eine Karte pro Zug erlaubt!'); return; }
+    if (this.playerField.length >= 4) { this._log('Feld ist voll! Max 4 Karten.'); return; }
+    const id = this.playerHand.splice(this.selectedHandIdx, 1)[0];
+    const c = getCard(id);
+    this.playerField.push({ ...c, id });
+    this.selectedHandIdx = -1;
+    this.cardPlayedThisTurn = true;
+    this._log(`Du spielst ${c.emoji} ${c.name}. (⚔${c.atk} 🛡${c.def})`);
+    if (c.ability && c.ability.includes('Heilstrom')) { this.playerHp = Math.min(this.playerMaxHp, this.playerHp + 3); this._log('💧 Heilstrom heilt 3 LP!'); }
+    if (c.ability && c.ability.includes('Feuerbombe')) { this.enemyHp = Math.max(0, this.enemyHp - 3); this._log('💥 Feuerbombe trifft für 3 Schaden!'); }
+    this._render();
+    this._checkWin();
+  },
+
+  startCombo() {
+    if (this.phase !== 'player' || this.gameOver) return;
+    if (this.cardPlayedThisTurn) { this._log('Du hast bereits eine Karte gespielt – nur 1 Aktion pro Zug!'); return; }
+    if (this.playerHand.length < 2) return;
+    this.comboMode = true; this.combo1Idx = -1; this.combo2Idx = -1;
+    this._log('Wähle zwei Karten zum Kombinieren...');
+    this._render();
+  },
+
+  _executeCombo() {
+    const id1 = this.playerHand[this.combo1Idx];
+    const id2 = this.playerHand[this.combo2Idx];
+    const c1 = getCard(id1), c2 = getCard(id2);
+    if (!c1 || !c2) { this.comboMode = false; this.combo1Idx = -1; this.combo2Idx = -1; this._render(); return; }
+    if (c1.isEndform || c2.isEndform) { this._log('Endformen können nicht kombiniert werden!'); this.comboMode = false; this.combo1Idx = -1; this.combo2Idx = -1; this._render(); return; }
+    const recipe = COMBO_RECIPES.find(r =>
+      (r.card1 === id1 && r.card2 === id2) ||
+      (r.card1 === id2 && r.card2 === id1)
+    );
+    this.comboMode = false;
+    if (!recipe) {
+      this._log(`❌ ${c1.name} + ${c2.name} – keine Kombination!`);
+      this.combo1Idx = -1; this.combo2Idx = -1;
+      this._render(); return;
+    }
+    const idxs = [this.combo1Idx, this.combo2Idx].sort((a,b) => b - a);
+    idxs.forEach(i => this.playerHand.splice(i, 1));
+    this.combo1Idx = -1; this.combo2Idx = -1;
+    this.cardPlayedThisTurn = true;
+    const result = { ...recipe, id: recipe.id, isEndform: true };
+    if (this.playerField.length < 4) {
+      this.playerField.push(result);
+      this._log(`✨ ${c1.emoji}${c1.name} + ${c2.emoji}${c2.name} = ${recipe.emoji} ${recipe.name}! (⚔${recipe.atk} 🛡${recipe.def})`);
+      if (!State.discoveredCombos.includes(recipe.id)) {
+        State.discoveredCombos.push(recipe.id);
+        Game.addCard(recipe.id);
+        setTimeout(() => { Game.showModal('⚗', 'Neue Kombination!', `${recipe.emoji} <b>${recipe.name}</b> wurde entdeckt!\n${recipe.desc}\n\n⚔ ATK: ${recipe.atk} · 🛡 DEF: ${recipe.def}\n\n${recipe.ability}`, 'Toll!', null, () => {}); }, 400);
+      }
+    } else { this._log('Feld voll – Kombination geht in die Hand.'); this.playerHand.push(recipe.id); }
+    this._render();
+  },
+
+  attack() {
+    if (this.phase !== 'player' || this.gameOver || this.attackMode) return;
+    if (this.turn === 1) { this._log('⛔ In Runde 1 darf nicht angegriffen werden!'); return; }
+    if (this.playerField.length === 0) { this._log('Keine Karten auf dem Feld!'); return; }
+    if (this.enemyField.length > 0) {
+      this.attackMode = true;
+      this._log('Wähle eine feindliche Karte zum Angreifen...');
+      this._render();
+    } else {
+      const atk = this.playerField[0].atk;
+      this.enemyHp = Math.max(0, this.enemyHp - atk);
+      this._log(`⚔ ${this.playerField[0].emoji} ${this.playerField[0].name} greift ${this.enemy.name} direkt an! ${atk} Schaden.`);
+      this._render();
+      this._checkWin();
+    }
+  },
+
+  _executeAttack(enemyIdx) {
+    if (!this.attackMode) return;
+    this.attackMode = false;
+    const attacker = this.playerField.reduce((best, c) => c.atk > best.atk ? c : best, this.playerField[0]);
+    const target = this.enemyField[enemyIdx];
+    const dmg = Math.max(0, attacker.atk - target.def);
+    const counterDmg = Math.max(0, target.atk - attacker.def);
+    if (dmg > 0) { this.enemyHp = Math.max(0, this.enemyHp - dmg); this._log(`⚔ ${attacker.emoji} ${attacker.name} greift ${target.emoji} ${target.name} an! ${dmg} Schaden.`); }
+    else this._log(`⚔ ${attacker.emoji} greift ${target.emoji} ${target.name} an – abgewehrt!`);
+    if (counterDmg > 0) { this.playerHp = Math.max(0, this.playerHp - counterDmg); this._log(`💢 ${target.emoji} kontert! ${counterDmg} Schaden an dir.`); }
+    this._render();
+    if (!this._checkWin()) this._checkLoss();
+  },
+
+  endTurn() {
+    if (this.phase !== 'player' || this.gameOver) return;
+    this.attackMode = false; this.comboMode = false; this.selectedHandIdx = -1;
+    this.phase = 'enemy';
+    this._drawCard('player');
+    this._log('Dein Zug endet. Gegner ist dran...');
+    this._render();
+    setTimeout(() => this._enemyTurn(), 900);
+  },
+
+  _enemyTurn() {
+    if (this.phase !== 'enemy') return;
+    // Enemy draws
+    this._drawCard('enemy');
+    // Enemy plays a card if possible
+    if (this.enemyHand.length > 0 && this.enemyField.length < 4) {
+      const idxToPlay = Math.floor(Math.random() * this.enemyHand.length);
+      const id = this.enemyHand.splice(idxToPlay, 1)[0];
+      const c = getCard(id);
+      if (c) { this.enemyField.push({ ...c, id }); this._log(`👺 ${this.enemy.name} spielt ${c.emoji} ${c.name}.`); }
+    }
+    // Enemy attacks
+    setTimeout(() => {
+      if (this.gameOver) return;
+      if (this.enemyField.length > 0 && this.turn > 1) {
+        const attacker = this.enemyField[Math.floor(Math.random() * this.enemyField.length)];
+        if (this.playerField.length > 0) {
+          const targetIdx = Math.floor(Math.random() * this.playerField.length);
+          const target = this.playerField[targetIdx];
+          const dmg = Math.max(0, attacker.atk - target.def);
+          const counterDmg = Math.max(0, target.atk - attacker.def);
+          if (dmg > 0) { this.playerHp = Math.max(0, this.playerHp - dmg); this._log(`💢 ${attacker.emoji} greift ${target.emoji} ${target.name} an! ${dmg} Schaden.`); }
+          else this._log(`💢 ${attacker.emoji} greift ${target.emoji} ${target.name} an – abgewehrt!`);
+          if (counterDmg > 0) { this.enemyHp = Math.max(0, this.enemyHp - counterDmg); }
+        } else {
+          const dmg = attacker.atk;
+          this.playerHp = Math.max(0, this.playerHp - dmg);
+          this._log(`💢 ${attacker.emoji} greift dich direkt an! ${dmg} Schaden.`);
+        }
+      } else if (this.turn === 1) {
+        this._log(`${this.enemy.name} baut seine Verteidigung auf.`);
+      }
+      this.turn++;
+      this.phase = 'player';
+      this.cardPlayedThisTurn = false;
+      this.selectedHandIdx = -1;
+      this._render();
+      if (!this._checkLoss()) this._log(`Zug ${this.turn} – dein Zug!`);
+    }, 700);
+  },
+
+  _checkWin() {
+    if (this.enemyHp <= 0 && !this.gameOver) {
+      this.gameOver = true;
+      this.phase = 'end';
+      const key = State.currentRegion.id + '_' + this.enemy.id;
+      if (!State.defeatedEnemies.includes(key)) State.defeatedEnemies.push(key);
+      const r = this.enemy.reward;
+      State.player.gold += r.gold;
+      State.player.wins++;
+      r.cards.forEach(id => { if (getCard(id)) Game.addCard(id); });
+      Game.addXp(r.xp);
+      UI.updateHud();
+      Game.save();
+      const cardsList = r.cards.map(id => { const c = getCard(id); return c ? `${c.emoji} ${c.name}` : id; }).join(', ');
+      const rewardHtml = `<div class="reward-list"><div class="reward-item">⭐ +${r.xp} XP</div><div class="reward-item">💰 +${r.gold} Gold</div><div class="reward-item">🃏 Neue Karten: ${cardsList}</div></div>`;
+      setTimeout(() => {
+        Game.showModal('🏆', 'Sieg!', rewardHtml, 'Zur Karte', null, () => {
+          showScreen('screen-map'); UI.renderMap(); UI.updateHud();
+        });
+      }, 400);
+      return true;
+    }
+    return false;
+  },
+
+  _checkLoss() {
+    if (this.playerHp <= 0 && !this.gameOver) {
+      this.gameOver = true;
+      this.phase = 'end';
+      setTimeout(() => {
+        Game.showModal('💀', 'Niederlage', `${this.enemy.name} hat dich besiegt.\nDeine HP: 0\n\nDu kannst es nochmal versuchen!`, 'Nochmal', 'Zur Karte', () => {
+          Battle.start(State.currentRegion, this.enemy);
+        }, () => { showScreen('screen-map'); UI.renderMap(); });
+      }, 400);
+      return true;
+    }
+    return false;
+  },
+
+  _log(msg) {
+    document.getElementById('battle-log').textContent = msg;
+  },
+};
+
+// ===== INIT =====
+(function init() {
+  const saved = localStorage.getItem('arcane_forge_save');
+  if (saved) {
+    try {
+      const s = JSON.parse(saved);
+      Object.assign(State.player, s.player || {});
+      State.deck = s.deck || [];
+      State.collection = s.collection || {};
+      State.discoveredCombos = s.discoveredCombos || [];
+      State.defeatedEnemies = s.defeatedEnemies || [];
+      const menuBtns = document.querySelectorAll('.menu-btn');
+      if (menuBtns[0]) menuBtns[0].textContent = '⚔ Weiterspielen';
+    } catch(e) {}
+  }
+  showScreen('screen-menu');
+})();
+</script>
+</body>
+</html>
