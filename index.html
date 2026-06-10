@@ -218,7 +218,7 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 .coll-card.epic { border-color: rgba(139,92,246,0.5); }
 .coll-card.legendary { border-color: rgba(245,158,11,0.6); }
 .coll-card.mythic { border-color: rgba(239,68,68,0.7); }
-.coll-card-emoji { font-size: 36px; }
+.coll-card-emoji { display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:6px; }
 .coll-card-name { font-size: 12px; font-weight: 700; text-align: center; color: var(--text); line-height: 1.2; }
 .coll-card-type { font-size: 10px; color: var(--text3); }
 .coll-card-stats { display: flex; gap: 6px; font-size: 12px; font-weight: 800; }
@@ -317,7 +317,7 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
   background: var(--bg2); border: 1.5px solid var(--accent); border-radius: 16px;
   width: 280px; padding: 24px 20px; display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
-.card-detail-emoji { font-size: 56px; }
+.card-detail-emoji { display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:10px; }
 .card-detail-name { font-size: 20px; font-weight: 800; color: var(--text); }
 .card-detail-rarity { font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
 .card-detail-type { font-size: 12px; color: var(--text3); }
@@ -841,6 +841,15 @@ const CARD_EXTRAS = {
 
 // fire→ice, water→fire, thunder→water, ice→thunder
 const ELEMENT_ADVANTAGE = { fire:'ice', water:'fire', thunder:'water', ice:'thunder' };
+const CARD_IMG_BASE = 'https://ebpndnpiuummplxyhqai.supabase.co/storage/v1/object/public/card-images';
+
+function cardArt(id, emoji, px) {
+  const ePx = Math.round(px * 0.58);
+  return `<div style="width:${px}px;height:${px}px;position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0">` +
+    `<img src="${CARD_IMG_BASE}/${id}.png" onerror="this.style.display='none'" style="position:absolute;top:0;left:0;width:${px}px;height:${px}px;object-fit:cover;border-radius:8px">` +
+    `<span style="font-size:${ePx}px;line-height:1;position:relative;z-index:-1">${emoji}</span>` +
+  `</div>`;
+}
 
 function elementBonus(a, d) {
   return (a.element && d.element && ELEMENT_ADVANTAGE[a.element] === d.element) ? 3 : 0;
@@ -1069,7 +1078,7 @@ const UI = {
     div.innerHTML = `
       <div class="rarity-dot rarity-${rarityClass(c.rarity)}"></div>
       ${count > 1 ? `<div class="count-badge">x${count}</div>` : ''}
-      <div class="coll-card-emoji">${c.emoji}</div>
+      <div class="coll-card-emoji">${cardArt(c.id, c.emoji, 64)}</div>
       <div class="coll-card-name">${c.name}</div>
       <div class="coll-card-type">${c.isEndform ? 'Endform' : c.type}</div>
       <div class="coll-card-stats">
@@ -1080,7 +1089,7 @@ const UI = {
   },
 
   showCardDetail(card) {
-    document.getElementById('detail-emoji').textContent = card.emoji;
+    document.getElementById('detail-emoji').innerHTML = cardArt(card.id, card.emoji, 110);
     document.getElementById('detail-name').textContent = card.name;
     const rarityLabel = (RARITY[card.rarity] || RARITY.common).label;
     const rColor = rarityColor(card.rarity);
@@ -1200,7 +1209,7 @@ const UI = {
         const c1 = getCard(rec.card1), c2 = getCard(rec.card2);
         const inColl = State.collection[id] || 0;
         html += `<div class="research-item known">
-          <div style="font-size:26px;cursor:pointer" onclick="UI.showCardDetail(getCard('${id}'))">${rec.emoji}</div>
+          <div style="cursor:pointer" onclick="UI.showCardDetail(getCard('${id}'))">${cardArt(id, rec.emoji, 40)}</div>
           <div class="research-info" style="cursor:pointer" onclick="UI.showCardDetail(getCard('${id}'))">
             <div style="font-size:13px;font-weight:700">${rec.name} <span style="font-size:10px;color:${rarityColor(rec.rarity)}">${(RARITY[rec.rarity]||RARITY.common).label}</span></div>
             <div style="font-size:11px;color:var(--text3)">${c1?.emoji||'?'} + ${c2?.emoji||'?'} · <span class="atk-color">⚔${rec.atk}</span> <span class="def-color">🛡${rec.def}</span></div>
