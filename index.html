@@ -843,6 +843,20 @@ const CARD_EXTRAS = {
 const ELEMENT_ADVANTAGE = { fire:'ice', water:'fire', thunder:'water', ice:'thunder' };
 const CARD_IMG_BASE = 'https://ebpndnpiuummplxyhqai.supabase.co/storage/v1/object/public/card-images';
 
+const RESEARCH_DURATION = { common:1800000, rare:1800000, epic:3600000, legendary:14400000, mythic:14400000 };
+const RESEARCH_LABEL    = { common:'30 Min', rare:'30 Min', epic:'60 Min', legendary:'4 Std', mythic:'4 Std' };
+
+function researchDuration(rarity) { return RESEARCH_DURATION[rarity] || 1800000; }
+function researchLabel(rarity)    { return RESEARCH_LABEL[rarity]    || '30 Min'; }
+
+function fmtTime(ms) {
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  if (h > 0) return h + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  return m + ':' + String(s).padStart(2,'0');
+}
+
 function cardArt(id, emoji, w) {
   const h = Math.round(w * 1.5);
   const ePx = Math.round(w * 0.55);
@@ -1186,16 +1200,14 @@ const UI = {
         const rec = COMBO_RECIPES.find(c => c.id === r.id);
         if (!rec) return;
         const elapsed = Date.now() - r.startTime;
-        const remaining = Math.max(0, 1800000 - elapsed);
-        const m = Math.floor(remaining / 60000);
-        const s = Math.floor((remaining % 60000) / 1000);
+        const remaining = Math.max(0, (r.duration || 1800000) - elapsed);
         html += `<div class="research-item researching">
           <div style="font-size:26px">${rec.emoji}</div>
           <div class="research-info">
-            <div style="font-size:13px;font-weight:700">${rec.name}</div>
+            <div style="font-size:13px;font-weight:700">${rec.name} <span style="font-size:10px;color:${rarityColor(rec.rarity)}">${(RARITY[rec.rarity]||RARITY.common).label}</span></div>
             <div style="font-size:11px;color:var(--text3)">⏱ Fertig in...</div>
           </div>
-          <div class="research-timer" id="rtimer-${rec.id}">${m}:${String(s).padStart(2,'0')}</div>
+          <div class="research-timer" id="rtimer-${rec.id}">${fmtTime(remaining)}</div>
         </div>`;
       });
       html += '<div class="separator" style="margin:10px 0"></div>';
@@ -1226,23 +1238,25 @@ const UI = {
 
     // Researchable
     const researchable = COMBO_RECIPES.filter(r => !known.includes(r.id) && !queueIds.includes(r.id));
+    const labBusy = queue.length > 0;
     if (researchable.length > 0) {
-      html += '<div class="section-label" style="margin-bottom:8px;padding:0 2px">🔬 Erforschen (30 min)</div>';
+      html += '<div class="section-label" style="margin-bottom:8px;padding:0 2px">🔬 Erforschen</div>';
       researchable.forEach(rec => {
         const c1 = getCard(rec.card1), c2 = getCard(rec.card2);
         const hasC1 = (State.collection[rec.card1] || 0) > 0;
         const hasC2 = (State.collection[rec.card2] || 0) > 0;
-        const canResearch = hasC1 && hasC2;
-        html += `<div class="research-item${canResearch ? '' : ' locked'}">
-          <div style="font-size:26px">${canResearch ? rec.emoji : '🔒'}</div>
+        const canResearch = hasC1 && hasC2 && !labBusy;
+        const btnLabel = labBusy ? '⏳ Belegt' : `🔬 ${researchLabel(rec.rarity)}`;
+        html += `<div class="research-item${(hasC1 && hasC2) ? '' : ' locked'}">
+          <div style="font-size:26px">${(hasC1 && hasC2) ? rec.emoji : '🔒'}</div>
           <div class="research-info">
-            <div style="font-size:13px;font-weight:700">${canResearch ? rec.name : '???'}</div>
+            <div style="font-size:13px;font-weight:700">${(hasC1 && hasC2) ? rec.name : '???'} <span style="font-size:10px;color:${rarityColor(rec.rarity)}">${(RARITY[rec.rarity]||RARITY.common).label}</span></div>
             <div style="font-size:11px;color:var(--text3)">
               ${c1?.emoji||'?'} <span style="color:${hasC1?'var(--green)':'var(--red)'};">${hasC1?'✓':'✗'}</span>
               + ${c2?.emoji||'?'} <span style="color:${hasC2?'var(--green)':'var(--red)'};">${hasC2?'✓':'✗'}</span>
             </div>
           </div>
-          <button class="research-btn" onclick="Lab.startResearch('${rec.id}')" ${canResearch ? '' : 'disabled'}>🔬 Start</button>
+          <button class="research-btn" onclick="Lab.startResearch('${rec.id}')" ${canResearch ? '' : 'disabled'}>${btnLabel}</button>
         </div>`;
       });
     }
@@ -1274,13 +1288,15 @@ const Lab = {
   _timerInterval: null,
 
   startResearch(id) {
-    if (State.researchQueue.find(r => r.id === id)) return;
     if (State.discoveredCombos.includes(id)) { UI.showToast('Bereits bekannt!'); return; }
-    State.researchQueue.push({ id, startTime: Date.now() });
+    if (State.researchQueue.length > 0) { UI.showToast('⏳ Labor ist bereits belegt!'); return; }
+    const rec = COMBO_RECIPES.find(r => r.id === id);
+    if (!rec) return;
+    const duration = researchDuration(rec.rarity);
+    State.researchQueue.push({ id, startTime: Date.now(), duration });
     Game.save();
     UI.renderCombo();
-    const rec = COMBO_RECIPES.find(r => r.id === id);
-    UI.showToast(`🔬 ${rec ? rec.name : ''} – Erforschung gestartet!`);
+    UI.showToast(`🔬 ${rec.name} – Erforschung gestartet! (${researchLabel(rec.rarity)})`);
     this._startTimer();
   },
 
@@ -1297,7 +1313,7 @@ const Lab = {
   checkResearch() {
     let changed = false;
     State.researchQueue = State.researchQueue.filter(r => {
-      if (Date.now() - r.startTime >= 1800000) {
+      if (Date.now() - r.startTime >= (r.duration || 1800000)) {
         if (!State.discoveredCombos.includes(r.id)) {
           State.discoveredCombos.push(r.id);
           Game.addCard(r.id);
@@ -1321,10 +1337,8 @@ const Lab = {
       State.researchQueue.forEach(r => {
         const el = document.getElementById('rtimer-' + r.id);
         if (el) {
-          const rem = Math.max(0, 1800000 - (Date.now() - r.startTime));
-          const m = Math.floor(rem / 60000);
-          const s = Math.floor((rem % 60000) / 1000);
-          el.textContent = m + ':' + String(s).padStart(2, '0');
+          const rem = Math.max(0, (r.duration || 1800000) - (Date.now() - r.startTime));
+          el.textContent = fmtTime(rem);
         }
       });
       if (State.researchQueue.length === 0) {
