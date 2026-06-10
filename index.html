@@ -843,10 +843,11 @@ const CARD_EXTRAS = {
 const ELEMENT_ADVANTAGE = { fire:'ice', water:'fire', thunder:'water', ice:'thunder' };
 const CARD_IMG_BASE = 'https://ebpndnpiuummplxyhqai.supabase.co/storage/v1/object/public/card-images';
 
-function cardArt(id, emoji, px) {
-  const ePx = Math.round(px * 0.58);
-  return `<div style="width:${px}px;height:${px}px;position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0">` +
-    `<img src="${CARD_IMG_BASE}/${id}.png" onerror="this.style.display='none'" style="position:absolute;top:0;left:0;width:${px}px;height:${px}px;object-fit:cover;border-radius:8px">` +
+function cardArt(id, emoji, w) {
+  const h = Math.round(w * 1.5);
+  const ePx = Math.round(w * 0.55);
+  return `<div style="width:${w}px;height:${h}px;position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:6px;overflow:hidden">` +
+    `<img src="${CARD_IMG_BASE}/${id}.png" onerror="this.style.display='none'" style="position:absolute;top:0;left:0;width:${w}px;height:${h}px;object-fit:cover">` +
     `<span style="font-size:${ePx}px;line-height:1;position:relative;z-index:-1">${emoji}</span>` +
   `</div>`;
 }
@@ -1078,7 +1079,7 @@ const UI = {
     div.innerHTML = `
       <div class="rarity-dot rarity-${rarityClass(c.rarity)}"></div>
       ${count > 1 ? `<div class="count-badge">x${count}</div>` : ''}
-      <div class="coll-card-emoji">${cardArt(c.id, c.emoji, 64)}</div>
+      <div class="coll-card-emoji">${cardArt(c.id, c.emoji, 72)}</div>
       <div class="coll-card-name">${c.name}</div>
       <div class="coll-card-type">${c.isEndform ? 'Endform' : c.type}</div>
       <div class="coll-card-stats">
@@ -1089,7 +1090,7 @@ const UI = {
   },
 
   showCardDetail(card) {
-    document.getElementById('detail-emoji').innerHTML = cardArt(card.id, card.emoji, 110);
+    document.getElementById('detail-emoji').innerHTML = cardArt(card.id, card.emoji, 100);
     document.getElementById('detail-name').textContent = card.name;
     const rarityLabel = (RARITY[card.rarity] || RARITY.common).label;
     const rColor = rarityColor(card.rarity);

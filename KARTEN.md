@@ -158,7 +158,7 @@ meineKombi: { cost:5, element:'fire', shield:true }
 
 ### Schritt 4: Kartenbild hochladen
 - Datei benennen: `MEINE_ID.png` (exakt die ID aus Schritt 1)
-- Format: **PNG, 512×512px** (quadratisch) oder **400×560px** (Karten-Format)
+- Format: **PNG, 400×600px** (Hochformat 2:3) — passend zu den Spielkarten
 - Hochladen unter: **Supabase Dashboard → Storage → card-images**
 - Das Bild erscheint automatisch im Spiel
 
