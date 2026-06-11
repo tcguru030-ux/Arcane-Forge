@@ -175,7 +175,7 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 .hand-card-name { font-size: 10px; text-align: center; color: var(--text); line-height: 1.2; font-weight: 700; }
 .hand-card-stats { display: flex; gap: 4px; font-size: 13px; font-weight: 900; }
 
-.battle-actions { flex-shrink: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 6px 8px; }
+.battle-actions { flex-shrink: 0; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; padding: 6px 8px; }
 .battle-btn {
   padding: 11px 6px; border-radius: 8px; border: 1px solid var(--border);
   background: var(--bg3); color: var(--text); font-size: 13px; cursor: pointer;
@@ -395,6 +395,8 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 /* ---- PER-CARD ATTACK ---- */
 .field-slot.selectable-attacker { border-color: #ff8a65 !important; box-shadow: 0 0 10px rgba(255,138,101,0.4); cursor: pointer; animation: pulse 1s infinite; }
 .field-slot.selectable-attacker:hover { background: rgba(255,138,101,0.12); }
+.field-slot.active-attacker { border-color: #ff8a65 !important; box-shadow: 0 0 14px rgba(255,138,101,0.7); cursor: pointer; }
+.field-slot.active-attacker:hover { background: rgba(255,138,101,0.18); }
 .mini-card.attacked { opacity: 0.38; }
 
 /* ---- AUTH / LOGIN ---- */
@@ -517,9 +519,8 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
   </div>
   <div class="battle-hand" id="battle-hand"></div>
   <div class="battle-actions">
-    <button class="battle-btn" id="btn-play" onclick="Battle.playCard()">▶ Karte spielen</button>
-    <button class="battle-btn btn-combo" id="btn-combo" onclick="Battle.startCombo()">⚗ Kombinieren</button>
-    <button class="battle-btn" id="btn-attack" onclick="Battle.attack()">⚔ Angreifen</button>
+    <button class="battle-btn" id="btn-play" onclick="Battle.playCard()">▶ Spielen</button>
+    <button class="battle-btn btn-combo" id="btn-combo" onclick="Battle.startCombo()">⚗ Kombi</button>
     <button class="battle-btn btn-end" id="btn-endturn" onclick="Battle.endTurn()">Zug enden ›</button>
   </div>
 </div>
@@ -1360,7 +1361,6 @@ const Battle = {
   combo1Idx: -1, combo2Idx: -1,
   comboMode: false,
   attackMode: false,
-  selectAttackerMode: false,
   selectedAttackerIdx: -1,
   gameOver: false,
   cardPlayedThisTurn: false,
@@ -1425,12 +1425,9 @@ const Battle = {
     this._renderComboHints();
     const active = isPlayer && !this.gameOver;
     const unattacked = this.playerField.filter(c => !c.hasAttacked).length;
-    document.getElementById('btn-play').disabled = !(active && !this.cardPlayedThisTurn && this.selectedHandIdx >= 0 && !this.selectAttackerMode && !this.attackMode);
-    document.getElementById('btn-combo').disabled = !(active && !this.cardPlayedThisTurn && this.playerHand.length >= 2 && !this.selectAttackerMode && !this.attackMode);
-    const btnAtk = document.getElementById('btn-attack');
-    btnAtk.disabled = !(active && unattacked > 0 && this.turn > 1 && !this.attackMode);
-    btnAtk.textContent = this.selectAttackerMode ? '✕ Abbrechen' : (active && unattacked > 0 && this.turn > 1 ? `⚔ Angreifen (${unattacked})` : '⚔ Angreifen');
-    document.getElementById('btn-endturn').disabled = !active || this.selectAttackerMode || this.attackMode;
+    document.getElementById('btn-play').disabled = !(active && !this.cardPlayedThisTurn && this.selectedHandIdx >= 0 && !this.attackMode);
+    document.getElementById('btn-combo').disabled = !(active && !this.cardPlayedThisTurn && this.playerHand.length >= 2 && !this.attackMode);
+    document.getElementById('btn-endturn').disabled = !active || this.attackMode;
   },
 
   _renderComboHints() {
@@ -1466,11 +1463,14 @@ const Battle = {
         // Taunt restriction: if any enemy card has taunt, only those are targetable
         const hasTauntOnField = isEnemy && this.enemyField.some(fc => fc.taunt);
         const isTargetable = isEnemy && this.attackMode && (!hasTauntOnField || c.taunt);
-        const isSelectable = !isEnemy && this.selectAttackerMode && !c.hasAttacked;
+        const isActiveAttacker = !isEnemy && this.attackMode && this.selectedAttackerIdx === i;
+        const canDirectAttack = !isEnemy && this.phase === 'player' && this.turn > 1
+          && !c.hasAttacked && !this.attackMode && !this.comboMode && !this.gameOver;
         let cls = 'field-slot occupied';
         if (isEnemy) cls += ' enemy-slot';
         if (isTargetable) cls += ' target';
-        if (isSelectable) cls += ' selectable-attacker';
+        if (canDirectAttack) cls += ' selectable-attacker';
+        if (isActiveAttacker) cls += ' active-attacker';
         slot.className = cls;
         const attackedCls = (!isEnemy && c.hasAttacked) ? ' attacked' : '';
         // Ability tags
@@ -1486,7 +1486,8 @@ const Battle = {
           <div style="display:flex;gap:2px;flex-wrap:wrap;justify-content:center;">${tags}</div>
         </div>`;
         if (isTargetable) { const idx = i; slot.onclick = () => Battle._executeAttack(idx); }
-        else if (isSelectable) { const idx = i; slot.onclick = () => Battle._selectAttacker(idx); }
+        else if (canDirectAttack) { const idx = i; slot.onclick = () => Battle._selectAttacker(idx); }
+        else if (isActiveAttacker) { slot.onclick = () => { Battle.attackMode = false; Battle.selectedAttackerIdx = -1; Battle._log('Angriff abgebrochen.'); Battle._render(); }; }
       } else {
         slot.className = 'field-slot';
         slot.innerHTML = '<span style="font-size:11px;color:var(--text3)">·</span>';
@@ -1624,10 +1625,9 @@ const Battle = {
   },
 
   _selectAttacker(attackerIdx) {
-    if (!this.selectAttackerMode) return;
+    if (this.phase !== 'player' || this.gameOver || this.attackMode) return;
     const attacker = this.playerField[attackerIdx];
     if (!attacker || attacker.hasAttacked) return;
-    this.selectAttackerMode = false;
     this.selectedAttackerIdx = attackerIdx;
     if (this.enemyField.length > 0) {
       this.attackMode = true;
@@ -1692,7 +1692,7 @@ const Battle = {
 
   endTurn() {
     if (this.phase !== 'player' || this.gameOver) return;
-    this.attackMode = false; this.selectAttackerMode = false; this.selectedAttackerIdx = -1;
+    this.attackMode = false; this.selectedAttackerIdx = -1;
     this.comboMode = false; this.selectedHandIdx = -1;
     this.phase = 'enemy';
     this._drawCard('player');
@@ -1716,7 +1716,7 @@ const Battle = {
       if (bestIdx >= 0) {
         const id = this.enemyHand.splice(bestIdx, 1)[0];
         const c = getCard(id);
-        if (c) { this.enemyMana -= (c.cost || 1); this.enemyField.push({ ...c, id, hasAttacked: false, shieldActive: c.shield ? true : false }); this._log(`👺 ${this.enemy.name} spielt ${c.emoji} ${c.name}. (⚔${c.atk} 🛡${c.def})`); }
+        if (c) { this.enemyMana -= (c.cost || 1); this.enemyField.push({ ...c, id, hasAttacked: false, shieldActive: c.shield ? true : false }); this._log(`👺 ${this.enemy.name} spielt ${c.emoji} ${c.name}. (⚔${c.atk} 🛡${c.def})`); this._render(); }
       }
     }
     this.enemyField.forEach(c => c.hasAttacked = false);
@@ -1724,7 +1724,7 @@ const Battle = {
       if (this.gameOver) return;
       if (this.turn > 1) this._executeEnemyAttacks();
       else { this._log(`${this.enemy.name} baut seine Verteidigung auf.`); this._finishEnemyTurn(); }
-    }, 700);
+    }, 1400);
   },
 
   _executeEnemyAttacks() {
@@ -1740,7 +1740,7 @@ const Battle = {
       msgs.push(`💢 ${attacker.emoji} greift direkt an! -${attacker.atk} LP`);
       this._log(msgs.join(' ')); this._render();
       if (this._checkLoss()) return;
-      setTimeout(() => this._executeEnemyAttacks(), 600); return;
+      setTimeout(() => this._executeEnemyAttacks(), 900); return;
     }
 
     // Taunt: AI must attack taunt card if one exists
@@ -1760,7 +1760,7 @@ const Battle = {
       msgs.push(`💢 ${attacker.emoji} vs ${target.emoji} – 🛡 Schild absorbiert!`);
       this._log(msgs.join(' ')); this._render();
       if (this._checkLoss() || this._checkWin()) return;
-      setTimeout(() => this._executeEnemyAttacks(), 650); return;
+      setTimeout(() => this._executeEnemyAttacks(), 900); return;
     }
 
     const newTDef = target.def - effectiveAtk;
