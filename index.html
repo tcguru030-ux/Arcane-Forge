@@ -739,42 +739,42 @@ const REGIONS = [
     enemies:[
       { id:'goblin', name:'Waldgoblin', emoji:'👺', hp:20, deck:['feuer','wasser','gnom','gnom'], reward:{ xp:30, gold:10, cards:['wasser','gnom'] }, type:'normal', diff:1 },
       { id:'kobold', name:'Koboldschurke', emoji:'🧌', hp:25, deck:['eis','feuer','troll','ritter'], reward:{ xp:50, gold:15, cards:['feuer','ritter'] }, type:'normal', diff:2 },
-      { id:'waldtroll', name:'Waldtroll', emoji:'👹', hp:35, deck:['troll','troll','feuer','wasser','ritter'], reward:{ xp:80, gold:25, cards:['troll','eisRitter'] }, type:'elite', diff:3 },
+      { id:'waldtroll', name:'Waldtroll', emoji:'👹', hp:35, deck:['troll','troll','feuer','wasser','ritter','eisRitter'], reward:{ xp:80, gold:25, cards:['troll','eisRitter'] }, type:'elite', diff:3 },
     ]
   },
   { id:'wald', name:'Waldregion', emoji:'🌲', desc:'Dunkle Wälder voller alter Geheimnisse.', minLevel:3, bg:'#0d2010',
     enemies:[
       { id:'waldelfe', name:'Dunkelelfe', emoji:'🧝', hp:30, deck:['schatten','elfe','elfe','licht','feuer'], reward:{ xp:70, gold:20, cards:['elfe','lichtElfe'] }, type:'normal', diff:2 },
       { id:'baumgeist', name:'Waldgeist', emoji:'👻', hp:28, deck:['geist','wasser','elfe','geist'], reward:{ xp:60, gold:18, cards:['geist','wasserGeist'] }, type:'normal', diff:2 },
-      { id:'walddrache', name:'Walddrache', emoji:'🐉', hp:45, deck:['drache','feuer','feuer','troll','ritter','schatten'], reward:{ xp:130, gold:40, cards:['drache','feuerDrache'] }, type:'boss', diff:4 },
+      { id:'walddrache', name:'Walddrache', emoji:'🐉', hp:45, deck:['drache','feuer','feuer','troll','ritter','schatten','flammenOger','feuerDrache'], reward:{ xp:130, gold:40, cards:['drache','feuerDrache'] }, type:'boss', diff:4 },
     ]
   },
   { id:'eis', name:'Eisregion', emoji:'❄', desc:'Ewiger Frost und schneidende Winde.', minLevel:5, bg:'#0d1a2a',
     enemies:[
-      { id:'eiswolf', name:'Eiswolf', emoji:'🐺', hp:35, deck:['eis','eis','flug','donner'], reward:{ xp:90, gold:28, cards:['eis','sturmAdler'] }, type:'normal', diff:3 },
-      { id:'frosttroll', name:'Frosttroll', emoji:'👹', hp:40, deck:['eis','troll','troll','eis','ritter'], reward:{ xp:110, gold:35, cards:['eisRitter','troll'] }, type:'elite', diff:3 },
-      { id:'eisdrache', name:'Gletscherdrache', emoji:'🐉', hp:60, deck:['drache','eis','eis','eis','donner','wasser'], reward:{ xp:200, gold:65, cards:['eisDrache','donner'] }, type:'boss', diff:5 },
+      { id:'eiswolf', name:'Eiswolf', emoji:'🐺', hp:35, deck:['eis','eis','flug','donner','eisGeist'], reward:{ xp:90, gold:28, cards:['eis','sturmAdler'] }, type:'normal', diff:3 },
+      { id:'frosttroll', name:'Frosttroll', emoji:'👹', hp:40, deck:['eis','troll','troll','eis','ritter','eisRitter'], reward:{ xp:110, gold:35, cards:['eisRitter','troll'] }, type:'elite', diff:3 },
+      { id:'eisdrache', name:'Gletscherdrache', emoji:'🐉', hp:60, deck:['drache','eis','eis','eis','donner','wasser','eisDrache','tiefseeDrache'], reward:{ xp:200, gold:65, cards:['eisDrache','donner'] }, type:'boss', diff:5 },
     ]
   },
   { id:'vulkan', name:'Vulkanregion', emoji:'🌋', desc:'Lava und Asche, Heimat der Feuerbestien.', minLevel:8, bg:'#2a0d0d',
     enemies:[
-      { id:'lavadaemon', name:'Lava-Dämon', emoji:'😈', hp:40, deck:['daemon','feuer','feuer','troll','donner'], reward:{ xp:120, gold:38, cards:['daemon','flammenOger'] }, type:'normal', diff:4 },
-      { id:'feuerriese', name:'Feuerriese', emoji:'🔥', hp:55, deck:['feuer','feuer','drache','troll','troll','ritter'], reward:{ xp:160, gold:50, cards:['feuer','feuerDrache'] }, type:'elite', diff:4 },
-      { id:'vulkanherr', name:'Herr des Vulkans', emoji:'🌋', hp:80, deck:['drache','daemon','feuer','feuer','donner','schatten','lich'], reward:{ xp:300, gold:100, cards:['feuerDrache','schattendaemon'] }, type:'boss', diff:6 },
+      { id:'lavadaemon', name:'Lava-Dämon', emoji:'😈', hp:40, deck:['daemon','feuer','feuer','troll','donner','flammenOger'], reward:{ xp:120, gold:38, cards:['daemon','flammenOger'] }, type:'normal', diff:4 },
+      { id:'feuerriese', name:'Feuerriese', emoji:'🔥', hp:55, deck:['feuer','feuer','drache','troll','troll','ritter','flammenOger','feuerElfe'], reward:{ xp:160, gold:50, cards:['feuer','feuerDrache'] }, type:'elite', diff:4 },
+      { id:'vulkanherr', name:'Herr des Vulkans', emoji:'🌋', hp:80, deck:['drache','daemon','feuer','feuer','donner','schatten','lich','feuerDrache','trollDaemon','donnerTroll'], reward:{ xp:300, gold:100, cards:['feuerDrache','schattendaemon'] }, type:'boss', diff:6 },
     ]
   },
   { id:'schatten', name:'Schattenreich', emoji:'🌑', desc:'Ewige Finsternis, wo Dämonen regieren.', minLevel:12, bg:'#0d0d1a',
     enemies:[
-      { id:'schattenassel', name:'Schattenassassin', emoji:'🗡', hp:45, deck:['schatten','schatten','daemon','flug','geist'], reward:{ xp:150, gold:48, cards:['phantomFuerst','schattenFlug'] }, type:'normal', diff:4 },
-      { id:'finsterfuerst', name:'Finsterfürst', emoji:'😈', hp:65, deck:['daemon','lich','schatten','draenei','schatten'], reward:{ xp:220, gold:70, cards:['schattendaemon','draenei'] }, type:'elite', diff:5 },
-      { id:'schattenkoenig', name:'König der Schatten', emoji:'👑', hp:100, deck:['lich','daemon','daemon','schatten','schatten','draenei','geist','phantomFuerst'], reward:{ xp:450, gold:150, cards:['draeneiLich','lichLicht'] }, type:'boss', diff:7 },
+      { id:'schattenassel', name:'Schattenassassin', emoji:'🗡', hp:45, deck:['schatten','schatten','daemon','flug','geist','schattenFlug'], reward:{ xp:150, gold:48, cards:['phantomFuerst','schattenFlug'] }, type:'normal', diff:4 },
+      { id:'finsterfuerst', name:'Finsterfürst', emoji:'😈', hp:65, deck:['daemon','lich','schatten','draenei','schatten','schattengnom','phantomFuerst'], reward:{ xp:220, gold:70, cards:['schattendaemon','draenei'] }, type:'elite', diff:5 },
+      { id:'schattenkoenig', name:'König der Schatten', emoji:'👑', hp:100, deck:['lich','daemon','daemon','schatten','schatten','draenei','geist','phantomFuerst','schattendaemon','draeneiLich'], reward:{ xp:450, gold:150, cards:['draeneiLich','lichLicht'] }, type:'boss', diff:7 },
     ]
   },
   { id:'himmel', name:'Himmelsreich', emoji:'☁', desc:'Das Reich der Götter, letzte Prüfung.', minLevel:18, bg:'#1a1a2a',
     enemies:[
-      { id:'himmelsritter', name:'Himmelsritter', emoji:'⚔', hp:55, deck:['licht','ritter','flug','elfe','donner'], reward:{ xp:200, gold:65, cards:['paladin','lichtElfe'] }, type:'normal', diff:5 },
-      { id:'sturmgott', name:'Sturmgott', emoji:'⛈', hp:80, deck:['donner','drache','flug','flug','draenei','donner'], reward:{ xp:300, gold:95, cards:['sturmDrache','tiefseeDrache'] }, type:'elite', diff:6 },
-      { id:'urdrache', name:'Urdrachengott', emoji:'🐉', hp:130, deck:['drache','lich','draenei','donner','feuer','eis','schatten','licht','sturmDrache'], reward:{ xp:600, gold:200, cards:['donnerDrache','flugLich'] }, type:'boss', diff:8 },
+      { id:'himmelsritter', name:'Himmelsritter', emoji:'⚔', hp:55, deck:['licht','ritter','flug','elfe','donner','lichtRitter'], reward:{ xp:200, gold:65, cards:['lichtRitter','lichtElfe'] }, type:'normal', diff:5 },
+      { id:'sturmgott', name:'Sturmgott', emoji:'⛈', hp:80, deck:['donner','drache','flug','flug','draenei','donner','donnerDrache','sturmAdler','tiefseeDrache'], reward:{ xp:300, gold:95, cards:['donnerDrache','tiefseeDrache'] }, type:'elite', diff:6 },
+      { id:'urdrache', name:'Urdrachengott', emoji:'🐉', hp:130, deck:['drache','lich','draenei','donner','feuer','eis','schatten','licht','donnerDrache','flugLich','draeneiLich','lichLicht'], reward:{ xp:600, gold:200, cards:['donnerDrache','flugLich'] }, type:'boss', diff:8 },
     ]
   },
 ];
@@ -940,18 +940,21 @@ const Game = {
     State.player.gold = 0; State.player.wins = 0;
     State.deck = ['feuer','wasser','feuer','wasser','eis','ritter','troll','gnom','licht','schatten'];
     State.collection = { feuer:3, wasser:3, eis:2, ritter:2, gnom:2, troll:1, licht:1, schatten:1, elfe:1, flug:1 };
-    const _startPool = COMBO_RECIPES.filter(r => r.rarity === 'rare' || r.rarity === 'epic');
-    const _rc = _startPool[Math.floor(Math.random() * _startPool.length)];
-    State.discoveredCombos = [_rc.id];
+    const rarePool = COMBO_RECIPES.filter(r => r.rarity === 'rare').sort(() => Math.random() - 0.5);
+    State.discoveredCombos = rarePool.slice(0, 2).map(r => r.id);
     State.researchQueue = [];
     State.defeatedEnemies = [];
-    if (!State.collection[_rc.id]) State.collection[_rc.id] = 0;
-    State.collection[_rc.id]++;
     this.save();
-    setTimeout(() => Game.showModal('🎁', 'Startkombination!', `Du kennst bereits:\n${_rc.emoji} <b>${_rc.name}</b>\n\n${_rc.desc}\n\n⚔ ATK: ${_rc.atk} · 🛡 DEF: ${_rc.def}\n\nEntdecke weitere Kombinationen im Labor!`, 'Los gehts!', null, () => {}), 700);
-    showScreen('screen-map');
-    UI.renderMap();
+    showScreen('screen-combo');
+    UI.renderCombo();
     UI.updateHud();
+    const c1 = COMBO_RECIPES.find(r => r.id === State.discoveredCombos[0]);
+    const c2 = COMBO_RECIPES.find(r => r.id === State.discoveredCombos[1]);
+    setTimeout(() => Game.showModal(
+      '⚗', 'Willkommen im Labor, ' + name + '!',
+      `Du startest mit 2 bekannten Kombinationen:\n${c1 ? c1.emoji + ' <b>' + c1.name + '</b>' : ''}\n${c2 ? c2.emoji + ' <b>' + c2.name + '</b>' : ''}\n\n<b>So funktioniert das Labor:</b>\nErforsche neue Kombinationen – du brauchst beide Basiskarten in deiner Sammlung. Im Kampf kannst du 2 passende Basiskarten auf dem Feld zu einer mächtigen Endform kombinieren.\n\n<b>Seltenheiten &amp; Forschungszeiten:</b>\n<span style="color:var(--rare)">● Selten</span> – 30 Min &nbsp;&nbsp; <span style="color:var(--epic)">● Episch</span> – 60 Min\n<span style="color:var(--legendary)">● Legendär</span> – 4 Std &nbsp;&nbsp; <span style="color:var(--mythic)">● Mythisch</span> – 4 Std\n\nStarte eine Erforschung und begib dich dann ins Abenteuer!`,
+      'Los gehts!', null, () => {}
+    ), 500);
   },
   save() {
     const data = { player: State.player, deck: State.deck, collection: State.collection, discoveredCombos: State.discoveredCombos, researchQueue: State.researchQueue, defeatedEnemies: State.defeatedEnemies };
@@ -1338,6 +1341,7 @@ const Lab = {
     UI.renderCombo();
     UI.showToast(`🔬 ${rec.name} – Erforschung gestartet! (${researchLabel(rec.rarity)})`);
     this._startTimer();
+    setTimeout(() => { showScreen('screen-map'); UI.renderMap(); }, 1200);
   },
 
   forge(id) {
