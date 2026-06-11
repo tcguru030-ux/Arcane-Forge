@@ -202,7 +202,9 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
   scrollbar-width: none; min-height: 28px; display: flex; align-items: center; }
 .combo-hint-strip::-webkit-scrollbar { display: none; }
 .combo-hint-item { display: inline-flex; align-items: center; gap: 4px; margin-right: 14px; font-size: 12px; color: var(--text2); white-space: nowrap; }
+.combo-hint-item.dim { opacity: 0.4; }
 .combo-hint-result { color: #c4b0f0; font-weight: 800; }
+.combo-hint-cost { font-size: 10px; color: #74b9e8; font-weight: 800; background: rgba(26,58,106,0.7); padding: 1px 4px; border-radius: 4px; }
 .no-atk-badge { font-size: 11px; padding: 2px 9px; border-radius: 20px; background: rgba(192,57,43,0.2); color: #ef9a9a; font-weight: 700; margin-left: 6px; }
 
 .battle-log { font-size: 13px; color: var(--text2); padding: 5px 10px; min-height: 32px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--border2); flex-shrink: 0; line-height: 1.4; }
@@ -703,33 +705,33 @@ const BASE_CARDS = [
 
 const COMBO_RECIPES = [
   { id:'flammenOger', card1:'feuer', card2:'troll', name:'Flammenoger', emoji:'🔥👹', atk:18, def:14, rarity:'epic', ability:'Feuerstoß: Fügt 3 Bonusschaden zu', desc:'Ein Oger, den die Flammen des Vulkans geformt haben.' },
-  { id:'tiefseeDrache', card1:'wasser', card2:'drache', name:'Tiefseedrache', emoji:'🌊🐉', atk:18, def:16, rarity:'legendary', ability:'Tidenwelle: Weist 2 Schaden pro Zug ab', desc:'Aus den tiefsten Ozeanen der Urzeit aufgestiegen.' },
-  { id:'phantomFuerst', card1:'schatten', card2:'geist', name:'Phantomfürst', emoji:'🌑👻', atk:20, def:10, rarity:'legendary', ability:'Schattenschritt: Angriffe können nicht geblockt werden', desc:'Eine Seele aus reiner Dunkelheit, kaum wahrnehmbar.' },
+  { id:'tiefseeDrache', card1:'wasser', card2:'drache', card3:'eis', name:'Tiefseedrache', emoji:'🌊🐉', atk:18, def:16, rarity:'legendary', ability:'Tidenwelle: Weist 2 Schaden pro Zug ab', desc:'Aus den tiefsten Ozeanen der Urzeit aufgestiegen.' },
+  { id:'phantomFuerst', card1:'schatten', card2:'geist', card3:'lich', name:'Phantomfürst', emoji:'🌑👻', atk:20, def:10, rarity:'legendary', ability:'Schattenschritt: Angriffe können nicht geblockt werden', desc:'Eine Seele aus reiner Dunkelheit, kaum wahrnehmbar.' },
   { id:'sturmAdler', card1:'donner', card2:'flug', name:'Sturmadler', emoji:'⚡🦅', atk:22, def:9, rarity:'epic', ability:'Blitzangriff: Trifft zuerst in jeder Runde', desc:'Ein majestätischer Vogel, der Blitze schleudert.' },
   { id:'eisRitter', card1:'eis', card2:'ritter', name:'Eisritter', emoji:'❄⚔', atk:14, def:20, rarity:'epic', ability:'Eispanzer: +3 DEF für 2 Runden', desc:'In Eis gehüllt, unzerstörbar wie ein Gletscher.' },
   { id:'lichtElfe', card1:'licht', card2:'elfe', name:'Lichtelfe', emoji:'✨🧝', atk:15, def:15, rarity:'rare', ability:'Heilung: Regeneriert 2 LP des Spielers', desc:'Von heiligem Licht umhüllt, eine Hüterin des Waldes.' },
-  { id:'schattendaemon', card1:'schatten', card2:'daemon', name:'Schattendämon', emoji:'🌑😈', atk:26, def:10, rarity:'mythic', ability:'Seelenraub: Zieht 1 Karte extra', desc:'Ein Dämon der obersten Finsternis, gefürchtet in allen Welten.' },
+  { id:'schattendaemon', card1:'schatten', card2:'daemon', card3:'lich', name:'Schattendämon', emoji:'🌑😈', atk:26, def:10, rarity:'mythic', ability:'Seelenraub: Zieht 1 Karte extra', desc:'Ein Dämon der obersten Finsternis, gefürchtet in allen Welten.' },
   { id:'runengnom', card1:'gnom', card2:'licht', name:'Runengnom', emoji:'🧙✨', atk:11, def:13, rarity:'rare', ability:'Runenmagie: Nächste Karte kostet kein Tempo', desc:'Ein erleuchteter Gnom mit magischen Runen an den Händen.' },
-  { id:'draeneiLich', card1:'draenei', card2:'lich', name:'Lichfürst Draenei', emoji:'🌀💀', atk:30, def:18, rarity:'mythic', ability:'Untod: Wird beim ersten Besiegen wiederbelebt', desc:'Der mächtigste Untote, der je existiert hat.' },
-  { id:'feuerDrache', card1:'feuer', card2:'drache', name:'Feuerdrachenlord', emoji:'🔥🐉', atk:24, def:12, rarity:'legendary', ability:'Flammeninferno: Verbrennt alle Feinde gleichzeitig', desc:'Der uralte Feuerdrache, Zerstörer von Königreichen.' },
+  { id:'draeneiLich', card1:'draenei', card2:'lich', card3:'geist', name:'Lichfürst Draenei', emoji:'🌀💀', atk:30, def:18, rarity:'mythic', ability:'Untod: Wird beim ersten Besiegen wiederbelebt', desc:'Der mächtigste Untote, der je existiert hat.' },
+  { id:'feuerDrache', card1:'feuer', card2:'drache', card3:'daemon', name:'Feuerdrachenlord', emoji:'🔥🐉', atk:24, def:12, rarity:'legendary', ability:'Flammeninferno: Verbrennt alle Feinde gleichzeitig', desc:'Der uralte Feuerdrache, Zerstörer von Königreichen.' },
   { id:'eisGeist', card1:'eis', card2:'geist', name:'Frostgeist', emoji:'❄👻', atk:12, def:12, rarity:'rare', ability:'Einfrieren: Feind überspringt nächsten Zug', desc:'Ein Geist aus dem ewigen Frost, der alles erstarren lässt.' },
   { id:'donnerTroll', card1:'donner', card2:'troll', name:'Gewittertroll', emoji:'⚡👹', atk:22, def:16, rarity:'epic', ability:'Donnerbrülle: Reduziert feindliche DEF um 2', desc:'Ein Troll, der von Blitzen durchzuckt wird.' },
   { id:'wasserElfe', card1:'wasser', card2:'elfe', name:'Meeresnymphe', emoji:'💧🧝', atk:13, def:17, rarity:'rare', ability:'Heilstrom: Heilt 3 LP wenn sie das Feld betritt', desc:'Eine anmutige Elfe der Ozeane und Flüsse.' },
   { id:'lichtRitter', card1:'licht', card2:'ritter', name:'Paladin des Lichts', emoji:'✨⚔', atk:17, def:18, rarity:'epic', ability:'Heiliger Schild: Absorbiert einmal Schaden vollständig', desc:'Ein heiliger Krieger, gesegnet vom Gott des Lichts.' },
   { id:'schattengnom', card1:'schatten', card2:'gnom', name:'Dunkelgnom', emoji:'🌑🧙', atk:16, def:11, rarity:'rare', ability:'Unsichtbarkeit: Kann nicht als Ziel gewählt werden', desc:'Ein Gnom der dunklen Künste, Meister der Illusion.' },
   { id:'feuerElfe', card1:'feuer', card2:'elfe', name:'Flammenelfe', emoji:'🔥🧝', atk:18, def:12, rarity:'epic', ability:'Feuerpfeil: Verursacht 2 direkten Schaden', desc:'Eine Elfe, deren Pfeile in Flammen stehen.' },
-  { id:'eisDaemon', card1:'eis', card2:'daemon', name:'Frostdämon', emoji:'❄😈', atk:20, def:14, rarity:'legendary', ability:'Absoluter Frost: Verringert alle feindlichen ATK um 2', desc:'Ein Dämon aus den tiefsten Eisgrotten der Unterwelt.' },
+  { id:'eisDaemon', card1:'eis', card2:'daemon', card3:'lich', name:'Frostdämon', emoji:'❄😈', atk:20, def:14, rarity:'legendary', ability:'Absoluter Frost: Verringert alle feindlichen ATK um 2', desc:'Ein Dämon aus den tiefsten Eisgrotten der Unterwelt.' },
   { id:'wasserGeist', card1:'wasser', card2:'geist', name:'Wassergeist', emoji:'💧👻', atk:10, def:15, rarity:'rare', ability:'Spiegelung: Reflektiert 1 Schaden', desc:'Ein Geist, der in stillen Wassern lebt.' },
-  { id:'donnerDrache', card1:'donner', card2:'drache', name:'Sturmdrache', emoji:'⚡🐉', atk:26, def:14, rarity:'mythic', ability:'Blitzsturm: Greift alle Feinde auf dem Feld an', desc:'Der mächtigste Drache des Himmels.' },
-  { id:'flugLich', card1:'flug', card2:'lich', name:'Todesgreif', emoji:'🦅💀', atk:24, def:10, rarity:'legendary', ability:'Seelenernter: Tötet eine weitere feindliche Karte', desc:'Halb Greif, halb Toter, eine Kreatur des Endes.' },
-  { id:'trollDaemon', card1:'troll', card2:'daemon', name:'Höllenoger', emoji:'👹😈', atk:24, def:18, rarity:'legendary', ability:'Dämonenwut: +5 ATK wenn HP unter 15', desc:'Ein Troll, der dem Teufel seine Seele verkauft hat.' },
+  { id:'donnerDrache', card1:'donner', card2:'drache', card3:'feuer', name:'Sturmdrache', emoji:'⚡🐉', atk:26, def:14, rarity:'mythic', ability:'Blitzsturm: Greift alle Feinde auf dem Feld an', desc:'Der mächtigste Drache des Himmels.' },
+  { id:'flugLich', card1:'flug', card2:'lich', card3:'draenei', name:'Todesgreif', emoji:'🦅💀', atk:24, def:10, rarity:'legendary', ability:'Seelenernter: Tötet eine weitere feindliche Karte', desc:'Halb Greif, halb Toter, eine Kreatur des Endes.' },
+  { id:'trollDaemon', card1:'troll', card2:'daemon', card3:'lich', name:'Höllenoger', emoji:'👹😈', atk:24, def:18, rarity:'legendary', ability:'Dämonenwut: +5 ATK wenn HP unter 15', desc:'Ein Troll, der dem Teufel seine Seele verkauft hat.' },
   { id:'draeneiElfe', card1:'draenei', card2:'elfe', name:'Sternenweberin', emoji:'🌀🧝', atk:17, def:16, rarity:'epic', ability:'Sternenmagie: Zieht 2 Karten', desc:'Eine Elfe aus einer anderen Welt, Meisterin der Sternmagie.' },
   { id:'feuerGnom', card1:'feuer', card2:'gnom', name:'Pyromant', emoji:'🔥🧙', atk:16, def:8, rarity:'rare', ability:'Feuerbombe: Verursacht 3 Schaden beim Erscheinen', desc:'Ein kleiner Gnom mit großer Leidenschaft für Feuer.' },
   { id:'wasserRitter', card1:'wasser', card2:'ritter', name:'Meeresritter', emoji:'💧⚔', atk:14, def:21, rarity:'epic', ability:'Wellenpanzer: Halbiert eingehenden Schaden einmal', desc:'Ein Ritter der Meere, sein Schild ist aus Korallenriff.' },
   { id:'schattenFlug', card1:'schatten', card2:'flug', name:'Nachtfalke', emoji:'🌑🦅', atk:19, def:9, rarity:'rare', ability:'Nachttaucher: Greift zweimal an', desc:'Ein Vogel des ewigen Schattens, schnell wie die Dunkelheit.' },
-  { id:'lichLicht', card1:'lich', card2:'licht', name:'Heiliger Verderber', emoji:'💀✨', atk:22, def:16, rarity:'mythic', ability:'Heilige Vernichtung: Zerstört eine feindliche Karte sofort', desc:'Eine Paradoxie aus Leben und Tod, allein sein Anblick tötet.' },
+  { id:'lichLicht', card1:'lich', card2:'licht', card3:'elfe', name:'Heiliger Verderber', emoji:'💀✨', atk:22, def:16, rarity:'mythic', ability:'Heilige Vernichtung: Zerstört eine feindliche Karte sofort', desc:'Eine Paradoxie aus Leben und Tod, allein sein Anblick tötet.' },
   { id:'trollRitter', card1:'troll', card2:'ritter', name:'Urkrieger', emoji:'👹⚔', atk:19, def:19, rarity:'epic', ability:'Unzerbrechlich: Erleidet nie mehr als 6 Schaden pro Treffer', desc:'Ein Troll, der die Kriegskunst der Menschen erlernt hat.' },
-  { id:'eisDrache', card1:'eis', card2:'drache', name:'Gletscherdrache', emoji:'❄🐉', atk:20, def:19, rarity:'legendary', ability:'Eishauch: Friert Feinde für 1 Runde ein', desc:'Ein uralter Drache aus dem ewigen Eis der Polarregion.' },
+  { id:'eisDrache', card1:'eis', card2:'drache', card3:'donner', name:'Gletscherdrache', emoji:'❄🐉', atk:20, def:19, rarity:'legendary', ability:'Eishauch: Friert Feinde für 1 Runde ein', desc:'Ein uralter Drache aus dem ewigen Eis der Polarregion.' },
   { id:'donnerGnom', card1:'donner', card2:'gnom', name:'Gewittergnom', emoji:'⚡🧙', atk:18, def:10, rarity:'rare', ability:'Statikfeld: Feindliche ATK -1 für 2 Runden', desc:'Ein Gnom, der die Kraft des Blitzes kanalisiert.' },
   { id:'flugElfe', card1:'flug', card2:'elfe', name:'Himmelselfe', emoji:'🦅🧝', atk:16, def:14, rarity:'rare', ability:'Luftstoß: Schiebt Feinde zurück, überspringen einen Zug', desc:'Eine Elfe, die auf Adlern durch die Wolken reitet.' },
 ];
@@ -1241,13 +1243,14 @@ const UI = {
       known.forEach(id => {
         const rec = COMBO_RECIPES.find(c => c.id === id);
         if (!rec) return;
-        const c1 = getCard(rec.card1), c2 = getCard(rec.card2);
+        const c1 = getCard(rec.card1), c2 = getCard(rec.card2), c3 = rec.card3 ? getCard(rec.card3) : null;
         const inColl = State.collection[id] || 0;
+        const ingr = c3 ? `${c1?.emoji||'?'} + ${c2?.emoji||'?'} + ${c3.emoji}` : `${c1?.emoji||'?'} + ${c2?.emoji||'?'}`;
         html += `<div class="research-item known">
           <div style="cursor:pointer" onclick="UI.showCardDetail(getCard('${id}'))">${cardArt(id, rec.emoji, 50)}</div>
           <div class="research-info" style="cursor:pointer" onclick="UI.showCardDetail(getCard('${id}'))">
             <div style="font-size:13px;font-weight:700">${rec.name} <span style="font-size:10px;color:${rarityColor(rec.rarity)}">${(RARITY[rec.rarity]||RARITY.common).label}</span></div>
-            <div style="font-size:11px;color:var(--text3)">${c1?.emoji||'?'} + ${c2?.emoji||'?'} · <span class="atk-color">⚔${rec.atk}</span> <span class="def-color">🛡${rec.def}</span></div>
+            <div style="font-size:11px;color:var(--text3)">${ingr} · <span class="atk-color">⚔${rec.atk}</span> <span class="def-color">🛡${rec.def}</span></div>
           </div>
           ${inColl > 0 ? `<span style="font-size:10px;color:var(--text3);align-self:center">x${inColl}</span>` : ''}
         </div>`;
@@ -1282,21 +1285,24 @@ const UI = {
     if (researchable.length > 0) {
       html += '<div class="section-label" style="margin-bottom:8px;padding:0 2px">🔬 Erforschen</div>';
       researchable.forEach(rec => {
-        const c1 = getCard(rec.card1), c2 = getCard(rec.card2);
+        const c1 = getCard(rec.card1), c2 = getCard(rec.card2), c3 = rec.card3 ? getCard(rec.card3) : null;
         const hasC1 = (State.collection[rec.card1] || 0) > 0;
         const hasC2 = (State.collection[rec.card2] || 0) > 0;
-        const canResearch = hasC1 && hasC2 && !labBusy;
+        const hasC3 = !rec.card3 || (State.collection[rec.card3] || 0) > 0;
+        const hasAll = hasC1 && hasC2 && hasC3;
+        const canResearch = hasAll && !labBusy;
         const btnLabel = labBusy ? '⏳ Belegt' : `🔬 ${researchLabel(rec.rarity)}`;
-        const cardThumb = (hasC1 && hasC2)
+        const cardThumb = hasAll
           ? cardArt(rec.id, rec.emoji, 50)
           : `<div style="width:50px;height:75px;background:#0a0a0a;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid #333;flex-shrink:0">🔒</div>`;
-        html += `<div class="research-item${(hasC1 && hasC2) ? '' : ' locked'}">
+        const c3row = c3 ? `<br>${c3.emoji} <span style="color:${hasC3?'var(--green)':'var(--red)'};">${hasC3?'✓':'✗'}</span>` : '';
+        html += `<div class="research-item${hasAll ? '' : ' locked'}">
           ${cardThumb}
           <div class="research-info">
-            <div style="font-size:13px;font-weight:700">${(hasC1 && hasC2) ? rec.name : '???'} <span style="font-size:10px;color:${rarityColor(rec.rarity)}">${(RARITY[rec.rarity]||RARITY.common).label}</span></div>
+            <div style="font-size:13px;font-weight:700">${hasAll ? rec.name : '???'} <span style="font-size:10px;color:${rarityColor(rec.rarity)}">${(RARITY[rec.rarity]||RARITY.common).label}</span>${rec.card3?'<span style="font-size:9px;color:var(--legendary);margin-left:4px">3 Karten</span>':''}</div>
             <div style="font-size:11px;color:var(--text3)">
               ${c1?.emoji||'?'} <span style="color:${hasC1?'var(--green)':'var(--red)'};">${hasC1?'✓':'✗'}</span>
-              + ${c2?.emoji||'?'} <span style="color:${hasC2?'var(--green)':'var(--red)'};">${hasC2?'✓':'✗'}</span>
+              + ${c2?.emoji||'?'} <span style="color:${hasC2?'var(--green)':'var(--red)'};">${hasC2?'✓':'✗'}</span>${c3row}
             </div>
           </div>
           <button class="research-btn" onclick="Lab.startResearch('${rec.id}')" ${canResearch ? '' : 'disabled'}>${btnLabel}</button>
@@ -1401,7 +1407,7 @@ const Battle = {
   playerField: [], enemyField: [],
   turn: 1, phase: 'player',
   selectedHandIdx: -1,
-  combo1Idx: -1, combo2Idx: -1,
+  combo1Idx: -1, combo2Idx: -1, combo3Idx: -1,
   comboMode: false,
   attackMode: false,
   selectedAttackerIdx: -1,
@@ -1426,7 +1432,7 @@ const Battle = {
     this.playerHand = []; this.enemyHand = [];
     this.playerField = []; this.enemyField = [];
     this.turn = 1; this.phase = 'player';
-    this.selectedHandIdx = -1; this.combo1Idx = -1; this.combo2Idx = -1;
+    this.selectedHandIdx = -1; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1;
     this.comboMode = false; this.attackMode = false;
     this.selectAttackerMode = false; this.selectedAttackerIdx = -1;
     this.gameOver = false;
@@ -1484,14 +1490,34 @@ const Battle = {
     const baseCards = this.playerHand.map((id, i) => ({ id, i })).filter(x => { const c = getCard(x.id); return c && !c.isEndform; });
     const hints = [];
     const seen = new Set();
+    // 2-card combos (selten/episch)
     for (let a = 0; a < baseCards.length; a++) {
       for (let b = a + 1; b < baseCards.length; b++) {
         const ia = baseCards[a].id, ib = baseCards[b].id;
-        const recipe = COMBO_RECIPES.find(r => (r.card1===ia&&r.card2===ib)||(r.card1===ib&&r.card2===ia));
+        const recipe = COMBO_RECIPES.find(r => !r.card3 && ((r.card1===ia&&r.card2===ib)||(r.card1===ib&&r.card2===ia)));
         if (recipe && !seen.has(recipe.id) && State.discoveredCombos.includes(recipe.id)) {
           seen.add(recipe.id);
           const ca = getCard(ia), cb = getCard(ib);
-          hints.push(`<span class="combo-hint-item">${ca.emoji}+${cb.emoji}=<span class="combo-hint-result">${recipe.emoji} ${recipe.name}</span></span>`);
+          const cost = (ca.cost||1) + (cb.cost||1);
+          const ok = this.playerMana >= cost;
+          hints.push(`<span class="combo-hint-item${ok?'':' dim'}">${ca.emoji}+${cb.emoji}=<span class="combo-hint-result">${recipe.emoji} ${recipe.name}</span><span class="combo-hint-cost">💎${cost}</span></span>`);
+        }
+      }
+    }
+    // 3-card combos (legendär/mythisch)
+    for (let a = 0; a < baseCards.length; a++) {
+      for (let b = a + 1; b < baseCards.length; b++) {
+        for (let c = b + 1; c < baseCards.length; c++) {
+          const ia = baseCards[a].id, ib = baseCards[b].id, ic = baseCards[c].id;
+          const ids = new Set([ia, ib, ic]);
+          const recipe = COMBO_RECIPES.find(r => r.card3 && ids.has(r.card1) && ids.has(r.card2) && ids.has(r.card3));
+          if (recipe && !seen.has(recipe.id) && State.discoveredCombos.includes(recipe.id)) {
+            seen.add(recipe.id);
+            const ca = getCard(ia), cb = getCard(ib), cc = getCard(ic);
+            const cost = (ca.cost||1) + (cb.cost||1) + (cc.cost||1);
+            const ok = this.playerMana >= cost;
+            hints.push(`<span class="combo-hint-item${ok?'':' dim'}">${ca.emoji}+${cb.emoji}+${cc.emoji}=<span class="combo-hint-result">${recipe.emoji} ${recipe.name}</span><span class="combo-hint-cost">💎${cost}</span></span>`);
+          }
         }
       }
     }
@@ -1558,8 +1584,15 @@ const Battle = {
     for (let a = 0; a < baseIds.length; a++) {
       for (let b = a + 1; b < baseIds.length; b++) {
         const ia = baseIds[a].id, ib = baseIds[b].id;
-        if (COMBO_RECIPES.find(r => (r.card1===ia&&r.card2===ib)||(r.card1===ib&&r.card2===ia))) {
+        if (COMBO_RECIPES.find(r => !r.card3 && ((r.card1===ia&&r.card2===ib)||(r.card1===ib&&r.card2===ia)))) {
           hasComboSet.add(baseIds[a].i); hasComboSet.add(baseIds[b].i);
+        }
+        for (let c2 = b + 1; c2 < baseIds.length; c2++) {
+          const ic = baseIds[c2].id;
+          const ids = new Set([ia, ib, ic]);
+          if (COMBO_RECIPES.find(r => r.card3 && ids.has(r.card1) && ids.has(r.card2) && ids.has(r.card3))) {
+            hasComboSet.add(baseIds[a].i); hasComboSet.add(baseIds[b].i); hasComboSet.add(baseIds[c2].i);
+          }
         }
       }
     }
@@ -1569,7 +1602,7 @@ const Battle = {
       const div = document.createElement('div');
       let cls = 'hand-card';
       if (this.comboMode) {
-        if (idx === this.combo1Idx || idx === this.combo2Idx) cls += ' combo-selected';
+        if (idx === this.combo1Idx || idx === this.combo2Idx || idx === this.combo3Idx) cls += ' combo-selected';
       } else {
         if (idx === this.selectedHandIdx) cls += ' selected';
       }
@@ -1587,12 +1620,24 @@ const Battle = {
   _selectHandCard(idx) {
     if (this.phase !== 'player' || this.gameOver) return;
     if (this.comboMode) {
-      if (this.combo1Idx < 0) { this.combo1Idx = idx; }
-      else if (idx !== this.combo1Idx) { this.combo2Idx = idx; }
-      if (this.combo1Idx >= 0 && this.combo2Idx >= 0) {
-        this._executeCombo();
-        return;
+      // Deselect if already selected
+      if (idx === this.combo1Idx) { this.combo1Idx = -1; this._render(); return; }
+      if (idx === this.combo2Idx) { this.combo2Idx = -1; this._render(); return; }
+      if (idx === this.combo3Idx) { this.combo3Idx = -1; this._render(); return; }
+      if (this.combo1Idx < 0) { this.combo1Idx = idx; this._render(); return; }
+      if (this.combo2Idx < 0) {
+        this.combo2Idx = idx;
+        const id1 = this.playerHand[this.combo1Idx], id2 = this.playerHand[this.combo2Idx];
+        // Check 2-card recipe (selten/episch)
+        const r2 = COMBO_RECIPES.find(r => !r.card3 && ((r.card1===id1&&r.card2===id2)||(r.card1===id2&&r.card2===id1)));
+        if (r2) { this._executeCombo(); return; }
+        // Check partial match for 3-card recipe (legendär/mythisch)
+        const has3 = COMBO_RECIPES.some(r => r.card3 && State.discoveredCombos.includes(r.id) &&
+          [r.card1,r.card2,r.card3].includes(id1) && [r.card1,r.card2,r.card3].includes(id2));
+        if (has3) { this._log('⚗ Legendäre Kombi – wähle eine dritte Karte!'); this._render(); return; }
+        this._log('❌ Keine Kombination für diese zwei Karten.'); this.combo1Idx = -1; this.combo2Idx = -1; this._render(); return;
       }
+      if (this.combo3Idx < 0) { this.combo3Idx = idx; this._executeCombo(); return; }
     } else {
       this.selectedHandIdx = this.selectedHandIdx === idx ? -1 : idx;
     }
@@ -1619,43 +1664,42 @@ const Battle = {
   startCombo() {
     if (this.phase !== 'player' || this.gameOver) return;
     if (this.playerHand.length < 2) return;
-    this.comboMode = true; this.combo1Idx = -1; this.combo2Idx = -1;
-    this._log('Wähle zwei Karten zum Kombinieren...');
+    this.comboMode = true; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1;
+    this._log('Wähle Karten zum Kombinieren (2 für selten/episch, 3 für legendär/mythisch)...');
     this._render();
   },
 
   _executeCombo() {
-    const id1 = this.playerHand[this.combo1Idx];
-    const id2 = this.playerHand[this.combo2Idx];
-    const c1 = getCard(id1), c2 = getCard(id2);
-    if (!c1 || !c2) { this.comboMode = false; this.combo1Idx = -1; this.combo2Idx = -1; this._render(); return; }
-    if (c1.isEndform || c2.isEndform) { this._log('Endformen können nicht kombiniert werden!'); this.comboMode = false; this.combo1Idx = -1; this.combo2Idx = -1; this._render(); return; }
-    const recipe = COMBO_RECIPES.find(r =>
-      (r.card1 === id1 && r.card2 === id2) ||
-      (r.card1 === id2 && r.card2 === id1)
-    );
-    this.comboMode = false;
-    if (!recipe) {
-      this._log(`❌ ${c1.name} + ${c2.name} – keine Kombination!`);
-      this.combo1Idx = -1; this.combo2Idx = -1;
-      this._render(); return;
+    const idx1 = this.combo1Idx, idx2 = this.combo2Idx, idx3 = this.combo3Idx;
+    const id1 = this.playerHand[idx1], id2 = this.playerHand[idx2];
+    const id3 = idx3 >= 0 ? this.playerHand[idx3] : null;
+    const c1 = getCard(id1), c2 = getCard(id2), c3 = id3 ? getCard(id3) : null;
+    this.comboMode = false; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1;
+    if (!c1 || !c2) { this._render(); return; }
+    if (c1.isEndform || c2.isEndform || (c3 && c3.isEndform)) {
+      this._log('Endformen können nicht kombiniert werden!'); this._render(); return;
     }
-    if (!State.discoveredCombos.includes(recipe.id)) {
-      this._log(`🔒 ${recipe.name} noch nicht erforscht! Gehe ins Labor.`);
-      this.combo1Idx = -1; this.combo2Idx = -1;
-      this._render(); return;
+    let recipe;
+    if (id3) {
+      const ids = new Set([id1, id2, id3]);
+      recipe = COMBO_RECIPES.find(r => r.card3 && ids.has(r.card1) && ids.has(r.card2) && ids.has(r.card3));
+    } else {
+      recipe = COMBO_RECIPES.find(r => !r.card3 && ((r.card1===id1&&r.card2===id2)||(r.card1===id2&&r.card2===id1)));
     }
-    const idxs = [this.combo1Idx, this.combo2Idx].sort((a,b) => b - a);
-    idxs.forEach(i => this.playerHand.splice(i, 1));
-    this.combo1Idx = -1; this.combo2Idx = -1;
-    const resultCard = getCard(recipe.id);
-    const comboCost = resultCard ? (resultCard.cost || 3) : 3;
-    if (this.playerMana < comboCost) { this._log(`❌ Nicht genug Mana für Kombi! Benötigt: 💎${comboCost}, vorhanden: 💎${this.playerMana}`); this.combo1Idx = -1; this.combo2Idx = -1; this._render(); return; }
+    if (!recipe) { this._log(`❌ ${c1.name} + ${c2.name}${c3?' + '+c3.name:''} – keine Kombination!`); this._render(); return; }
+    if (!State.discoveredCombos.includes(recipe.id)) { this._log(`🔒 ${recipe.name} noch nicht erforscht!`); this._render(); return; }
+    // Mana = sum of ingredient costs
+    const comboCost = (c1.cost||1) + (c2.cost||1) + (c3 ? (c3.cost||1) : 0);
+    if (this.playerMana < comboCost) { this._log(`❌ Nicht genug Mana! Benötigt: 💎${comboCost}, vorhanden: 💎${this.playerMana}`); this._render(); return; }
+    // Remove cards (highest index first)
+    const idxs = id3 ? [idx1, idx2, idx3] : [idx1, idx2];
+    idxs.sort((a,b) => b - a).forEach(i => this.playerHand.splice(i, 1));
     this.playerMana -= comboCost;
-    const result = { ...recipe, ...getCard(recipe.id), id: recipe.id, isEndform: true, hasAttacked: false, justPlayed: true, shieldActive: resultCard?.shield ? true : false };
+    const resultCard = getCard(recipe.id);
+    const result = { ...recipe, ...resultCard, id: recipe.id, isEndform: true, hasAttacked: false, justPlayed: true, shieldActive: resultCard?.shield ? true : false };
     if (this.playerField.length < 4) {
       this.playerField.push(result);
-      this._log(`✨ ${c1.emoji}${c1.name} + ${c2.emoji}${c2.name} = ${recipe.emoji} ${recipe.name}! (⚔${recipe.atk} 🛡${recipe.def})`);
+      this._log(`✨ ${c1.emoji}${c1.name} + ${c2.emoji}${c2.name}${c3?' + '+c3.emoji+c3.name:''} = ${recipe.emoji} ${recipe.name}! (⚔${recipe.atk} 🛡${recipe.def})`);
     } else { this._log('Feld voll – Kombination geht in die Hand.'); this.playerHand.push(recipe.id); }
     this._render();
   },
@@ -1743,7 +1787,7 @@ const Battle = {
   endTurn() {
     if (this.phase !== 'player' || this.gameOver) return;
     this.attackMode = false; this.selectedAttackerIdx = -1;
-    this.comboMode = false; this.selectedHandIdx = -1;
+    this.comboMode = false; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1; this.selectedHandIdx = -1;
     this.phase = 'enemy';
     this._drawCard('player');
     this._log('Dein Zug endet. Gegner ist dran...');
