@@ -385,6 +385,12 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 /* ---- MANA & ABILITY BADGES ---- */
 .mana-crystal { color:#74b9e8; font-weight:800; }
 .mana-cost-badge { position:absolute; top:3px; left:4px; background:rgba(26,58,106,0.92); color:#74b9e8; font-size:10px; font-weight:800; padding:1px 5px; border-radius:6px; min-width:16px; text-align:center; line-height:1.4; }
+.mana-bar { flex-shrink:0; display:flex; align-items:center; justify-content:center; gap:5px; padding:6px 12px; background:rgba(26,58,106,0.25); border-top:1px solid rgba(116,185,232,0.15); }
+.mana-bar-label { font-size:11px; font-weight:800; color:#74b9e8; letter-spacing:1px; text-transform:uppercase; margin-right:4px; }
+.mana-bar-val { font-size:13px; font-weight:900; color:#74b9e8; min-width:28px; text-align:right; margin-left:2px; }
+.mana-orb { width:16px; height:16px; border-radius:50%; background:#74b9e8; box-shadow:0 0 6px rgba(116,185,232,0.6); flex-shrink:0; transition:background 0.2s; }
+.mana-orb.spent { background:rgba(116,185,232,0.15); box-shadow:none; }
+.abil-tag.abil-sleep { background:rgba(100,100,100,0.3); color:#aaa; font-size:8px; padding:1px 4px; border-radius:4px; }
 .hand-card.unaffordable { opacity:0.28; cursor:not-allowed; }
 .abil-tag { font-size:8px; padding:1px 4px; border-radius:3px; font-weight:700; display:inline-block; margin-top:1px; line-height:1.4; }
 .abil-taunt { background:rgba(192,57,43,0.35); color:#ef9a9a; }
@@ -517,6 +523,7 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
   <div class="combo-hint-strip" id="combo-hint-strip">
     <span style="font-size:10px;color:var(--text3)">Keine Kombinationen in der Hand</span>
   </div>
+  <div class="mana-bar" id="mana-bar"></div>
   <div class="battle-hand" id="battle-hand"></div>
   <div class="battle-actions">
     <button class="battle-btn" id="btn-play" onclick="Battle.playCard()">▶ Spielen</button>
@@ -1366,7 +1373,6 @@ const Battle = {
   attackMode: false,
   selectedAttackerIdx: -1,
   gameOver: false,
-  cardPlayedThisTurn: false,
   playerMana: 0, playerMaxMana: 0,
   enemyMana: 0,
   enemy: null,
@@ -1390,7 +1396,7 @@ const Battle = {
     this.selectedHandIdx = -1; this.combo1Idx = -1; this.combo2Idx = -1;
     this.comboMode = false; this.attackMode = false;
     this.selectAttackerMode = false; this.selectedAttackerIdx = -1;
-    this.gameOver = false; this.cardPlayedThisTurn = false;
+    this.gameOver = false;
     this.playerMana = 1; this.playerMaxMana = 1; this.enemyMana = 1;
     for (let i = 0; i < 4; i++) this._drawCard('player');
     for (let i = 0; i < 3; i++) this._drawCard('enemy');
@@ -1414,7 +1420,13 @@ const Battle = {
     document.getElementById('battle-phase').textContent = isPlayer ? 'DEIN ZUG' : 'GEGNER';
     const noAtkBadge = document.getElementById('no-atk-badge');
     if (noAtkBadge) noAtkBadge.style.display = (isPlayer && this.turn === 1) ? '' : 'none';
-    document.getElementById('battle-cards-left').innerHTML = `Deck:${this.playerDeck.length} <span class="mana-crystal">💎${this.playerMana}/${this.playerMaxMana}</span>`;
+    document.getElementById('battle-cards-left').textContent = `Deck: ${this.playerDeck.length}`;
+    const manaBar = document.getElementById('mana-bar');
+    if (manaBar) {
+      let orbs = '';
+      for (let i = 0; i < this.playerMaxMana; i++) orbs += `<div class="mana-orb${i < this.playerMana ? '' : ' spent'}"></div>`;
+      manaBar.innerHTML = `<span class="mana-bar-label">💎 Mana</span>${orbs}<span class="mana-bar-val">${this.playerMana}/${this.playerMaxMana}</span>`;
+    }
     const phpPct = Math.max(0, Math.round((this.playerHp / this.playerMaxHp) * 100));
     const ehpPct = Math.max(0, Math.round((this.enemyHp / this.enemyMaxHp) * 100));
     document.getElementById('player-hp-bar').style.width = phpPct + '%';
@@ -1428,8 +1440,8 @@ const Battle = {
     this._renderComboHints();
     const active = isPlayer && !this.gameOver;
     const unattacked = this.playerField.filter(c => !c.hasAttacked).length;
-    document.getElementById('btn-play').disabled = !(active && !this.cardPlayedThisTurn && this.selectedHandIdx >= 0 && !this.attackMode);
-    document.getElementById('btn-combo').disabled = !(active && !this.cardPlayedThisTurn && this.playerHand.length >= 2 && !this.attackMode);
+    document.getElementById('btn-play').disabled = !(active && this.selectedHandIdx >= 0 && !this.attackMode);
+    document.getElementById('btn-combo').disabled = !(active && this.playerHand.length >= 2 && !this.attackMode);
     document.getElementById('btn-endturn').disabled = !active || this.attackMode;
   },
 
@@ -1467,8 +1479,8 @@ const Battle = {
         const hasTauntOnField = isEnemy && this.enemyField.some(fc => fc.taunt);
         const isTargetable = isEnemy && this.attackMode && (!hasTauntOnField || c.taunt);
         const isActiveAttacker = !isEnemy && this.attackMode && this.selectedAttackerIdx === i;
-        const canDirectAttack = !isEnemy && this.phase === 'player' && this.turn > 1
-          && !c.hasAttacked && !this.attackMode && !this.comboMode && !this.gameOver;
+        const canDirectAttack = !isEnemy && this.phase === 'player'
+          && !c.hasAttacked && !c.justPlayed && !this.attackMode && !this.comboMode && !this.gameOver;
         let cls = 'field-slot occupied';
         if (isEnemy) cls += ' enemy-slot';
         if (isTargetable) cls += ' target';
@@ -1478,6 +1490,7 @@ const Battle = {
         const attackedCls = (!isEnemy && c.hasAttacked) ? ' attacked' : '';
         // Ability tags
         let tags = '';
+        if (c.justPlayed) tags += '<span class="abil-tag abil-sleep">💤</span>';
         if (c.taunt) tags += '<span class="abil-tag abil-taunt">SPOTT</span>';
         if (c.shieldActive) tags += '<span class="abil-tag abil-shield">🛡</span>';
         if (c.firstStrike) tags += '<span class="abil-tag abil-fast">⚡</span>';
@@ -1550,16 +1563,14 @@ const Battle = {
 
   playCard() {
     if (this.selectedHandIdx < 0 || this.phase !== 'player' || this.gameOver) return;
-    if (this.cardPlayedThisTurn) { this._log('Nur eine Karte pro Zug erlaubt!'); return; }
     if (this.playerField.length >= 4) { this._log('Feld ist voll! Max 4 Karten.'); return; }
     const id = this.playerHand.splice(this.selectedHandIdx, 1)[0];
     const c = getCard(id);
     const cost = c.cost || 1;
     if (this.playerMana < cost) { this._log(`❌ Nicht genug Mana! Benötigt: 💎${cost}, vorhanden: 💎${this.playerMana}`); this.playerHand.splice(this.selectedHandIdx, 0, id); return; }
     this.playerMana -= cost;
-    this.playerField.push({ ...c, id, hasAttacked: false, shieldActive: c.shield ? true : false });
+    this.playerField.push({ ...c, id, hasAttacked: false, justPlayed: true, shieldActive: c.shield ? true : false });
     this.selectedHandIdx = -1;
-    this.cardPlayedThisTurn = true;
     this._log(`Du spielst ${c.emoji} ${c.name}. (⚔${c.atk} 🛡${c.def})`);
     if (c.ability && c.ability.includes('Heilstrom')) { this.playerHp = Math.min(this.playerMaxHp, this.playerHp + 3); this._log('💧 Heilstrom heilt 3 LP!'); }
     if (c.ability && c.ability.includes('Feuerbombe')) { this.enemyHp = Math.max(0, this.enemyHp - 3); this._log('💥 Feuerbombe trifft für 3 Schaden!'); }
@@ -1569,7 +1580,6 @@ const Battle = {
 
   startCombo() {
     if (this.phase !== 'player' || this.gameOver) return;
-    if (this.cardPlayedThisTurn) { this._log('Du hast bereits eine Karte gespielt – nur 1 Aktion pro Zug!'); return; }
     if (this.playerHand.length < 2) return;
     this.comboMode = true; this.combo1Idx = -1; this.combo2Idx = -1;
     this._log('Wähle zwei Karten zum Kombinieren...');
@@ -1604,8 +1614,7 @@ const Battle = {
     const comboCost = resultCard ? (resultCard.cost || 3) : 3;
     if (this.playerMana < comboCost) { this._log(`❌ Nicht genug Mana für Kombi! Benötigt: 💎${comboCost}, vorhanden: 💎${this.playerMana}`); this.combo1Idx = -1; this.combo2Idx = -1; this._render(); return; }
     this.playerMana -= comboCost;
-    this.cardPlayedThisTurn = true;
-    const result = { ...recipe, ...getCard(recipe.id), id: recipe.id, isEndform: true, hasAttacked: false, shieldActive: resultCard?.shield ? true : false };
+    const result = { ...recipe, ...getCard(recipe.id), id: recipe.id, isEndform: true, hasAttacked: false, justPlayed: true, shieldActive: resultCard?.shield ? true : false };
     if (this.playerField.length < 4) {
       this.playerField.push(result);
       this._log(`✨ ${c1.emoji}${c1.name} + ${c2.emoji}${c2.name} = ${recipe.emoji} ${recipe.name}! (⚔${recipe.atk} 🛡${recipe.def})`);
@@ -1708,21 +1717,21 @@ const Battle = {
     if (this.phase !== 'enemy') return;
     this._drawCard('enemy');
     this.enemyMana = Math.min(this.turn, 8);
-    // Smart card play: pick best affordable card
-    if (this.enemyHand.length > 0 && this.enemyField.length < 4) {
+    // Clear justPlayed from last turn before playing new cards
+    this.enemyField.forEach(c => { c.hasAttacked = false; c.justPlayed = false; });
+    // Smart card play: keep playing while mana allows and field not full
+    while (this.enemyHand.length > 0 && this.enemyField.length < 4) {
       let bestIdx = -1, bestScore = -1;
       this.enemyHand.forEach((id, i) => {
         const c = getCard(id);
         const cost = c ? (c.cost || 1) : 99;
         if (c && cost <= this.enemyMana && c.atk * 1.4 + c.def > bestScore) { bestScore = c.atk * 1.4 + c.def; bestIdx = i; }
       });
-      if (bestIdx >= 0) {
-        const id = this.enemyHand.splice(bestIdx, 1)[0];
-        const c = getCard(id);
-        if (c) { this.enemyMana -= (c.cost || 1); this.enemyField.push({ ...c, id, hasAttacked: false, shieldActive: c.shield ? true : false }); this._log(`👺 ${this.enemy.name} spielt ${c.emoji} ${c.name}. (⚔${c.atk} 🛡${c.def})`); this._render(); }
-      }
+      if (bestIdx < 0) break;
+      const id = this.enemyHand.splice(bestIdx, 1)[0];
+      const c = getCard(id);
+      if (c) { this.enemyMana -= (c.cost || 1); this.enemyField.push({ ...c, id, hasAttacked: false, justPlayed: true, shieldActive: c.shield ? true : false }); this._log(`👺 ${this.enemy.name} spielt ${c.emoji} ${c.name}. (⚔${c.atk} 🛡${c.def})`); this._render(); }
     }
-    this.enemyField.forEach(c => c.hasAttacked = false);
     setTimeout(() => {
       if (this.gameOver) return;
       if (this.turn > 1) this._executeEnemyAttacks();
@@ -1732,7 +1741,7 @@ const Battle = {
 
   _executeEnemyAttacks() {
     if (this.gameOver) return;
-    const attackerIdx = this.enemyField.findIndex(c => !c.hasAttacked);
+    const attackerIdx = this.enemyField.findIndex(c => !c.hasAttacked && !c.justPlayed);
     if (attackerIdx < 0) { this._finishEnemyTurn(); return; }
     const attacker = this.enemyField[attackerIdx];
     attacker.hasAttacked = true;
@@ -1808,9 +1817,8 @@ const Battle = {
   _finishEnemyTurn() {
     this.turn++;
     this.phase = 'player';
-    this.cardPlayedThisTurn = false;
     this.selectedHandIdx = -1;
-    this.playerField.forEach(c => c.hasAttacked = false);
+    this.playerField.forEach(c => { c.hasAttacked = false; c.justPlayed = false; });
     this.playerMaxMana = Math.min(this.turn, 8);
     this.playerMana = this.playerMaxMana;
     this._render();
