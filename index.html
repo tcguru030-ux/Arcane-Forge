@@ -345,6 +345,25 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 .card-detail-combos-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; text-align: center; }
 .combo-recipe-row { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; color: var(--text2); padding: 3px 0; }
 
+/* ---- SHOP ---- */
+#screen-shop { background: var(--bg); }
+.shop-content { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.chest-card {
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius);
+  padding: 16px 14px; display: flex; align-items: center; gap: 14px; cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.chest-card:hover { border-color: var(--accent); background: var(--bg3); }
+.chest-icon { font-size: 38px; width: 48px; text-align: center; flex-shrink: 0; }
+.chest-info { flex: 1; }
+.chest-name { font-size: 16px; font-weight: 700; color: var(--text); }
+.chest-desc { font-size: 12px; color: var(--text2); margin-top: 3px; line-height: 1.4; }
+.chest-price { font-size: 15px; color: var(--accent); font-weight: 800; margin-top: 5px; }
+.rarity-req-badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 20px; margin-top: 4px; font-weight: 700; }
+.rarity-req-common { background: rgba(136,136,136,0.2); color: var(--common); }
+.rarity-req-rare { background: rgba(59,130,246,0.2); color: var(--rare); }
+.rarity-req-epic { background: rgba(139,92,246,0.2); color: var(--epic); }
+
 /* ---- SETTINGS ---- */
 #screen-settings { background: var(--bg); }
 .settings-list { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
@@ -484,6 +503,9 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
     <button class="nav-btn" onclick="showScreen('screen-deck');UI.renderDeckEditor()">
       <span class="nav-btn-icon">🃏</span>Deck
     </button>
+    <button class="nav-btn" onclick="showScreen('screen-shop');Shop.render()">
+      <span class="nav-btn-icon">🛒</span>Shop
+    </button>
     <button class="nav-btn" onclick="showScreen('screen-combo');UI.renderCombo()">
       <span class="nav-btn-icon">⚗</span>Labor
     </button>
@@ -590,6 +612,58 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
     <div style="font-size:12px;color:var(--text2);" id="combo-count">0 entdeckt</div>
   </div>
   <div class="combo-area" id="combo-area"></div>
+</div>
+
+<!-- SHOP -->
+<div id="screen-shop" class="screen">
+  <div class="topbar">
+    <button class="topbar-back" onclick="showScreen('screen-map')">‹</button>
+    <div class="topbar-title">🛒 Shop</div>
+    <div style="font-size:13px;color:var(--accent);font-weight:700;" id="shop-gold">💰0</div>
+  </div>
+  <div class="shop-content">
+    <div style="font-size:12px;color:var(--text3);padding:0 2px 6px">Kaufe Truhen und erhalte neue Karten für deine Sammlung.</div>
+    <div class="chest-card" onclick="Shop.openChest('truhe')">
+      <div class="chest-icon">📦</div>
+      <div class="chest-info">
+        <div class="chest-name">Truhe</div>
+        <div class="chest-desc">Enthält 1 zufällige <b>gewöhnliche</b> Basiskarte.</div>
+        <span class="rarity-req-badge rarity-req-common">● Gewöhnlich</span>
+        <div class="chest-price">💰 100 Gold</div>
+      </div>
+    </div>
+    <div class="chest-card" onclick="Shop.openChest('selteneTruhe')">
+      <div class="chest-icon">🔵</div>
+      <div class="chest-info">
+        <div class="chest-name">Seltene Truhe</div>
+        <div class="chest-desc">1 gewöhnliche Basiskarte + <b>30% Chance</b> auf eine seltene Karte.</div>
+        <span class="rarity-req-badge rarity-req-common">● Gewöhnlich</span>
+        <span class="rarity-req-badge rarity-req-rare" style="margin-left:4px">◑ Selten 30%</span>
+        <div class="chest-price">💰 200 Gold</div>
+      </div>
+    </div>
+    <div class="chest-card" onclick="Shop.openChest('epischeTruhe')">
+      <div class="chest-icon">🟣</div>
+      <div class="chest-info">
+        <div class="chest-name">Epische Truhe</div>
+        <div class="chest-desc">1 gewöhnliche Basiskarte + <b>20% Chance</b> auf episch (40% selten).</div>
+        <span class="rarity-req-badge rarity-req-common">● Gewöhnlich</span>
+        <span class="rarity-req-badge rarity-req-rare" style="margin-left:4px">◑ Selten 40%</span>
+        <span class="rarity-req-badge rarity-req-epic" style="margin-left:4px">◑ Episch 20%</span>
+        <div class="chest-price">💰 300 Gold</div>
+      </div>
+    </div>
+    <div class="chest-card" onclick="Shop.openChest('mythTruhe')">
+      <div class="chest-icon">🔮</div>
+      <div class="chest-info">
+        <div class="chest-name">Truhe der Mythen</div>
+        <div class="chest-desc">1 seltene Basiskarte + <b>25% Chance</b> auf eine epische Karte.</div>
+        <span class="rarity-req-badge rarity-req-rare">● Selten</span>
+        <span class="rarity-req-badge rarity-req-epic" style="margin-left:4px">◑ Episch 25%</span>
+        <div class="chest-price">💰 500 Gold</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- SETTINGS -->
@@ -700,7 +774,13 @@ const BASE_CARDS = [
   { id:'daemon', name:'Dämon', emoji:'😈', atk:8, def:4, rarity:'epic', type:'kreatur', desc:'Aus der Unterwelt beschworen.' },
   { id:'gnom', name:'Gnom', emoji:'🧙', atk:3, def:4, rarity:'common', type:'kreatur', desc:'Klein aber weise, Meister der Runen.' },
   { id:'draenei', name:'Draenei', emoji:'🌀', atk:6, def:6, rarity:'epic', type:'kreatur', desc:'Ein Wesen aus einer fremden Dimension.' },
-  { id:'lich', name:'Lich', emoji:'💀', atk:10, def:3, rarity:'legendary', type:'kreatur', desc:'Der unsterbliche Nekromant, Herr der Toten.' },
+  { id:'lich', name:'Lich', emoji:'💀', atk:10, def:3, rarity:'epic', type:'kreatur', desc:'Der unsterbliche Nekromant, Herr der Toten.' },
+  { id:'erde', name:'Erde', emoji:'🪨', atk:3, def:8, rarity:'common', type:'element', desc:'Unerschütterliche Erde, die alle Angriffe standhaft aushält.' },
+  { id:'wind', name:'Wind', emoji:'🌬', atk:6, def:3, rarity:'common', type:'element', desc:'Schneller Wind, der blitzartig zuschlägt und den Feind überrascht.' },
+  { id:'kobold', name:'Kobold', emoji:'🧌', atk:4, def:4, rarity:'common', type:'kreatur', desc:'Ein kleines, listiges Wesen der Wälder, gefürchtet für seine Tücke.' },
+  { id:'blitz', name:'Blitz', emoji:'🌩', atk:5, def:2, rarity:'common', type:'element', desc:'Ein blitzschneller Funken voller roher Energie.' },
+  { id:'hexe', name:'Hexe', emoji:'🧙‍♀️', atk:6, def:4, rarity:'rare', type:'kreatur', desc:'Eine Hexe, die dunkle Magie auf ihre Feinde entfesselt.' },
+  { id:'vampir', name:'Vampir', emoji:'🧛', atk:7, def:4, rarity:'rare', type:'kreatur', desc:'Ein blutrünstiger Vampir der Nacht, der Lebenskraft saugt.' },
 ];
 
 const COMBO_RECIPES = [
@@ -708,32 +788,36 @@ const COMBO_RECIPES = [
   { id:'tiefseeDrache', card1:'wasser', card2:'drache', card3:'eis', name:'Tiefseedrache', emoji:'🌊🐉', atk:18, def:16, rarity:'legendary', ability:'Tidenwelle: Weist 2 Schaden pro Zug ab', desc:'Aus den tiefsten Ozeanen der Urzeit aufgestiegen.' },
   { id:'phantomFuerst', card1:'schatten', card2:'geist', card3:'lich', name:'Phantomfürst', emoji:'🌑👻', atk:20, def:10, rarity:'legendary', ability:'Schattenschritt: Angriffe können nicht geblockt werden', desc:'Eine Seele aus reiner Dunkelheit, kaum wahrnehmbar.' },
   { id:'sturmAdler', card1:'donner', card2:'flug', name:'Sturmadler', emoji:'⚡🦅', atk:22, def:9, rarity:'epic', ability:'Blitzangriff: Trifft zuerst in jeder Runde', desc:'Ein majestätischer Vogel, der Blitze schleudert.' },
-  { id:'eisRitter', card1:'eis', card2:'ritter', name:'Eisritter', emoji:'❄⚔', atk:14, def:20, rarity:'epic', ability:'Eispanzer: +3 DEF für 2 Runden', desc:'In Eis gehüllt, unzerstörbar wie ein Gletscher.' },
-  { id:'lichtElfe', card1:'licht', card2:'elfe', name:'Lichtelfe', emoji:'✨🧝', atk:15, def:15, rarity:'rare', ability:'Heilung: Regeneriert 2 LP des Spielers', desc:'Von heiligem Licht umhüllt, eine Hüterin des Waldes.' },
+  { id:'eisRitter', card1:'eis', card2:'ritter', name:'Eisritter', emoji:'❄⚔', atk:14, def:20, rarity:'rare', ability:'Eispanzer: +3 DEF für 2 Runden', desc:'In Eis gehüllt, unzerstörbar wie ein Gletscher.' },
+  { id:'lichtElfe', card1:'licht', card2:'elfe', name:'Lichtelfe', emoji:'✨🧝', atk:15, def:15, rarity:'epic', ability:'Heilung: Regeneriert 2 LP des Spielers', desc:'Von heiligem Licht umhüllt, eine Hüterin des Waldes.' },
   { id:'schattendaemon', card1:'schatten', card2:'daemon', card3:'lich', name:'Schattendämon', emoji:'🌑😈', atk:26, def:10, rarity:'mythic', ability:'Seelenraub: Zieht 1 Karte extra', desc:'Ein Dämon der obersten Finsternis, gefürchtet in allen Welten.' },
-  { id:'runengnom', card1:'gnom', card2:'licht', name:'Runengnom', emoji:'🧙✨', atk:11, def:13, rarity:'rare', ability:'Runenmagie: Nächste Karte kostet kein Tempo', desc:'Ein erleuchteter Gnom mit magischen Runen an den Händen.' },
-  { id:'draeneiLich', card1:'draenei', card2:'lich', card3:'geist', name:'Lichfürst Draenei', emoji:'🌀💀', atk:30, def:18, rarity:'mythic', ability:'Untod: Wird beim ersten Besiegen wiederbelebt', desc:'Der mächtigste Untote, der je existiert hat.' },
+  { id:'runengnom', card1:'gnom', card2:'licht', name:'Runengnom', emoji:'🧙✨', atk:11, def:13, rarity:'epic', ability:'Runenmagie: Nächste Karte kostet kein Tempo', desc:'Ein erleuchteter Gnom mit magischen Runen an den Händen.' },
+  { id:'draeneiLich', card1:'draenei', card2:'lich', card3:'daemon', name:'Lichfürst Draenei', emoji:'🌀💀', atk:30, def:18, rarity:'mythic', ability:'Untod: Wird beim ersten Besiegen wiederbelebt', desc:'Der mächtigste Untote, der je existiert hat.' },
   { id:'feuerDrache', card1:'feuer', card2:'drache', card3:'daemon', name:'Feuerdrachenlord', emoji:'🔥🐉', atk:24, def:12, rarity:'legendary', ability:'Flammeninferno: Verbrennt alle Feinde gleichzeitig', desc:'Der uralte Feuerdrache, Zerstörer von Königreichen.' },
   { id:'eisGeist', card1:'eis', card2:'geist', name:'Frostgeist', emoji:'❄👻', atk:12, def:12, rarity:'rare', ability:'Einfrieren: Feind überspringt nächsten Zug', desc:'Ein Geist aus dem ewigen Frost, der alles erstarren lässt.' },
   { id:'donnerTroll', card1:'donner', card2:'troll', name:'Gewittertroll', emoji:'⚡👹', atk:22, def:16, rarity:'epic', ability:'Donnerbrülle: Reduziert feindliche DEF um 2', desc:'Ein Troll, der von Blitzen durchzuckt wird.' },
-  { id:'wasserElfe', card1:'wasser', card2:'elfe', name:'Meeresnymphe', emoji:'💧🧝', atk:13, def:17, rarity:'rare', ability:'Heilstrom: Heilt 3 LP wenn sie das Feld betritt', desc:'Eine anmutige Elfe der Ozeane und Flüsse.' },
+  { id:'wasserElfe', card1:'wasser', card2:'elfe', name:'Meeresnymphe', emoji:'💧🧝', atk:13, def:17, rarity:'epic', ability:'Heilstrom: Heilt 3 LP wenn sie das Feld betritt', desc:'Eine anmutige Elfe der Ozeane und Flüsse.' },
   { id:'lichtRitter', card1:'licht', card2:'ritter', name:'Paladin des Lichts', emoji:'✨⚔', atk:17, def:18, rarity:'epic', ability:'Heiliger Schild: Absorbiert einmal Schaden vollständig', desc:'Ein heiliger Krieger, gesegnet vom Gott des Lichts.' },
-  { id:'schattengnom', card1:'schatten', card2:'gnom', name:'Dunkelgnom', emoji:'🌑🧙', atk:16, def:11, rarity:'rare', ability:'Unsichtbarkeit: Kann nicht als Ziel gewählt werden', desc:'Ein Gnom der dunklen Künste, Meister der Illusion.' },
+  { id:'schattengnom', card1:'schatten', card2:'gnom', name:'Dunkelgnom', emoji:'🌑🧙', atk:16, def:11, rarity:'epic', ability:'Unsichtbarkeit: Kann nicht als Ziel gewählt werden', desc:'Ein Gnom der dunklen Künste, Meister der Illusion.' },
   { id:'feuerElfe', card1:'feuer', card2:'elfe', name:'Flammenelfe', emoji:'🔥🧝', atk:18, def:12, rarity:'epic', ability:'Feuerpfeil: Verursacht 2 direkten Schaden', desc:'Eine Elfe, deren Pfeile in Flammen stehen.' },
   { id:'eisDaemon', card1:'eis', card2:'daemon', card3:'lich', name:'Frostdämon', emoji:'❄😈', atk:20, def:14, rarity:'legendary', ability:'Absoluter Frost: Verringert alle feindlichen ATK um 2', desc:'Ein Dämon aus den tiefsten Eisgrotten der Unterwelt.' },
   { id:'wasserGeist', card1:'wasser', card2:'geist', name:'Wassergeist', emoji:'💧👻', atk:10, def:15, rarity:'rare', ability:'Spiegelung: Reflektiert 1 Schaden', desc:'Ein Geist, der in stillen Wassern lebt.' },
-  { id:'donnerDrache', card1:'donner', card2:'drache', card3:'feuer', name:'Sturmdrache', emoji:'⚡🐉', atk:26, def:14, rarity:'mythic', ability:'Blitzsturm: Greift alle Feinde auf dem Feld an', desc:'Der mächtigste Drache des Himmels.' },
+  { id:'donnerDrache', card1:'donner', card2:'drache', card3:'schatten', name:'Sturmdrache', emoji:'⚡🐉', atk:26, def:14, rarity:'mythic', ability:'Blitzsturm: Greift alle Feinde auf dem Feld an', desc:'Der mächtigste Drache des Himmels.' },
   { id:'flugLich', card1:'flug', card2:'lich', card3:'draenei', name:'Todesgreif', emoji:'🦅💀', atk:24, def:10, rarity:'legendary', ability:'Seelenernter: Tötet eine weitere feindliche Karte', desc:'Halb Greif, halb Toter, eine Kreatur des Endes.' },
   { id:'trollDaemon', card1:'troll', card2:'daemon', card3:'lich', name:'Höllenoger', emoji:'👹😈', atk:24, def:18, rarity:'legendary', ability:'Dämonenwut: +5 ATK wenn HP unter 15', desc:'Ein Troll, der dem Teufel seine Seele verkauft hat.' },
   { id:'draeneiElfe', card1:'draenei', card2:'elfe', name:'Sternenweberin', emoji:'🌀🧝', atk:17, def:16, rarity:'epic', ability:'Sternenmagie: Zieht 2 Karten', desc:'Eine Elfe aus einer anderen Welt, Meisterin der Sternmagie.' },
   { id:'feuerGnom', card1:'feuer', card2:'gnom', name:'Pyromant', emoji:'🔥🧙', atk:16, def:8, rarity:'rare', ability:'Feuerbombe: Verursacht 3 Schaden beim Erscheinen', desc:'Ein kleiner Gnom mit großer Leidenschaft für Feuer.' },
-  { id:'wasserRitter', card1:'wasser', card2:'ritter', name:'Meeresritter', emoji:'💧⚔', atk:14, def:21, rarity:'epic', ability:'Wellenpanzer: Halbiert eingehenden Schaden einmal', desc:'Ein Ritter der Meere, sein Schild ist aus Korallenriff.' },
-  { id:'schattenFlug', card1:'schatten', card2:'flug', name:'Nachtfalke', emoji:'🌑🦅', atk:19, def:9, rarity:'rare', ability:'Nachttaucher: Greift zweimal an', desc:'Ein Vogel des ewigen Schattens, schnell wie die Dunkelheit.' },
+  { id:'wasserRitter', card1:'wasser', card2:'ritter', name:'Meeresritter', emoji:'💧⚔', atk:14, def:21, rarity:'rare', ability:'Wellenpanzer: Halbiert eingehenden Schaden einmal', desc:'Ein Ritter der Meere, sein Schild ist aus Korallenriff.' },
+  { id:'schattenFlug', card1:'schatten', card2:'flug', name:'Nachtfalke', emoji:'🌑🦅', atk:19, def:9, rarity:'epic', ability:'Nachttaucher: Greift zweimal an', desc:'Ein Vogel des ewigen Schattens, schnell wie die Dunkelheit.' },
   { id:'lichLicht', card1:'lich', card2:'licht', card3:'elfe', name:'Heiliger Verderber', emoji:'💀✨', atk:22, def:16, rarity:'mythic', ability:'Heilige Vernichtung: Zerstört eine feindliche Karte sofort', desc:'Eine Paradoxie aus Leben und Tod, allein sein Anblick tötet.' },
   { id:'trollRitter', card1:'troll', card2:'ritter', name:'Urkrieger', emoji:'👹⚔', atk:19, def:19, rarity:'epic', ability:'Unzerbrechlich: Erleidet nie mehr als 6 Schaden pro Treffer', desc:'Ein Troll, der die Kriegskunst der Menschen erlernt hat.' },
   { id:'eisDrache', card1:'eis', card2:'drache', card3:'donner', name:'Gletscherdrache', emoji:'❄🐉', atk:20, def:19, rarity:'legendary', ability:'Eishauch: Friert Feinde für 1 Runde ein', desc:'Ein uralter Drache aus dem ewigen Eis der Polarregion.' },
-  { id:'donnerGnom', card1:'donner', card2:'gnom', name:'Gewittergnom', emoji:'⚡🧙', atk:18, def:10, rarity:'rare', ability:'Statikfeld: Feindliche ATK -1 für 2 Runden', desc:'Ein Gnom, der die Kraft des Blitzes kanalisiert.' },
-  { id:'flugElfe', card1:'flug', card2:'elfe', name:'Himmelselfe', emoji:'🦅🧝', atk:16, def:14, rarity:'rare', ability:'Luftstoß: Schiebt Feinde zurück, überspringen einen Zug', desc:'Eine Elfe, die auf Adlern durch die Wolken reitet.' },
+  { id:'donnerGnom', card1:'donner', card2:'gnom', name:'Gewittergnom', emoji:'⚡🧙', atk:18, def:10, rarity:'epic', ability:'Statikfeld: Feindliche ATK -1 für 2 Runden', desc:'Ein Gnom, der die Kraft des Blitzes kanalisiert.' },
+  { id:'flugElfe', card1:'flug', card2:'elfe', name:'Himmelselfe', emoji:'🦅🧝', atk:16, def:14, rarity:'epic', ability:'Luftstoß: Schiebt Feinde zurück, überspringen einen Zug', desc:'Eine Elfe, die auf Adlern durch die Wolken reitet.' },
+  { id:'steinKobold', card1:'erde', card2:'kobold', name:'Steinkobold', emoji:'🪨🧌', atk:12, def:22, rarity:'rare', ability:'Erdwall: Schützt benachbarte Karten einmal', desc:'Ein Kobold, der sich tief in der Erde verschanzt hat.' },
+  { id:'sturmSchwinge', card1:'wind', card2:'blitz', name:'Sturmschwinge', emoji:'🌬🌩', atk:20, def:8, rarity:'rare', ability:'Blitzsturm: Greift zweimal an', desc:'Ein Sturm aus Wind und Blitz, der mit rasender Geschwindigkeit trifft.' },
+  { id:'feuerHexe', card1:'hexe', card2:'feuer', name:'Feuerhexe', emoji:'🧙‍♀️🔥', atk:20, def:10, rarity:'epic', ability:'Hexenfluch: Feindliche ATK -2 für 2 Runden', desc:'Eine Hexe, die Flammen als Waffe einsetzt und Feinde verflucht.' },
+  { id:'nachtFuerst', card1:'vampir', card2:'schatten', name:'Nachtfürst', emoji:'🧛🌑', atk:24, def:12, rarity:'epic', ability:'Seelensauger: Heilt 2 LP bei jedem Angriff', desc:'Ein uralter Vampir, der im Schatten der Nacht regiert.' },
 ];
 
 const REGIONS = [
@@ -800,7 +884,7 @@ function showScreen(id) {
   if (el) { el.classList.add('active'); el.classList.add('animate-fadein'); }
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const map = {
-    'screen-map': 0, 'screen-collection': 1, 'screen-deck': 2, 'screen-combo': 3, 'screen-settings': 4
+    'screen-map': 0, 'screen-collection': 1, 'screen-deck': 2, 'screen-shop': 3, 'screen-combo': 4, 'screen-settings': 5
   };
   if (map[id] !== undefined) {
     const navBtns = document.querySelectorAll('.nav-btn');
@@ -826,6 +910,12 @@ const CARD_EXTRAS = {
   gnom:     { cost:1 },
   draenei:  { cost:2 },
   lich:     { cost:3, firstStrike:true },
+  erde:     { cost:2, taunt:true },
+  wind:     { cost:2, firstStrike:true },
+  kobold:   { cost:1 },
+  blitz:    { cost:1, element:'thunder', firstStrike:true },
+  hexe:     { cost:2, firstStrike:true },
+  vampir:   { cost:3, firstStrike:true },
   // Combo cards
   flammenOger:     { cost:5, element:'fire' },
   tiefseeDrache:   { cost:5, element:'water' },
@@ -857,6 +947,10 @@ const CARD_EXTRAS = {
   eisDrache:       { cost:6, element:'ice', taunt:true },
   donnerGnom:      { cost:4, element:'thunder' },
   flugElfe:        { cost:5 },
+  steinKobold:     { cost:4, taunt:true },
+  sturmSchwinge:   { cost:4, element:'thunder', firstStrike:true },
+  feuerHexe:       { cost:5, element:'fire', firstStrike:true },
+  nachtFuerst:     { cost:5, firstStrike:true },
 };
 
 // fire→ice, water→fire, thunder→water, ice→thunder
@@ -921,6 +1015,28 @@ function getCard(id) {
 function rarityClass(r) { return r || 'common'; }
 
 function rarityColor(r) { return (RARITY[r] || RARITY.common).color; }
+
+function _rarityRank(r) { return {common:1,rare:2,epic:3,legendary:4,mythic:5}[r] || 1; }
+
+function checkIngredientsForRarity(recipe, ingredientCards) {
+  const rarity = recipe.rarity;
+  if (rarity === 'rare')   return ingredientCards.every(c => c.rarity === 'common');
+  if (rarity === 'epic')   return ingredientCards.some(c => _rarityRank(c.rarity) >= 2);
+  if (rarity === 'legendary') {
+    return ingredientCards.some(c => _rarityRank(c.rarity) >= 2) &&
+           ingredientCards.some(c => _rarityRank(c.rarity) >= 3);
+  }
+  if (rarity === 'mythic') return ingredientCards.every(c => _rarityRank(c.rarity) >= 2);
+  return true;
+}
+
+function ingredientRarityRequirement(rarity) {
+  if (rarity === 'rare')       return 'Benötigt 2x gewöhnliche Karten';
+  if (rarity === 'epic')       return 'Benötigt mind. 1x seltene oder epische Karte';
+  if (rarity === 'legendary')  return 'Benötigt mind. 1x Selten + 1x Episch';
+  if (rarity === 'mythic')     return 'Alle 3 Karten müssen selten oder episch sein';
+  return '';
+}
 
 function shuffle(arr) {
   const a = [...arr];
@@ -1091,7 +1207,7 @@ const UI = {
           <span class="enemy-type-badge ${typeCls}">${typeLabel}</span>
           <div class="enemy-name">${e.name}${defeated ? ' ✓' : ''}</div>
           <div class="enemy-stats">HP: ${e.hp} · Deck: ${e.deck.length} Karten</div>
-          <div class="enemy-reward">XP: ${e.reward.xp} · Gold: ${e.reward.gold}</div>
+          <div class="enemy-reward">XP: ${e.reward.xp} · Gold: ${defeated ? '5 (Wdh.)' : '10 🌟'}</div>
         </div>
         <div class="difficulty-stars">${stars}</div>`;
       div.onclick = () => Battle.start(region, e);
@@ -1688,6 +1804,11 @@ const Battle = {
     }
     if (!recipe) { this._log(`❌ ${c1.name} + ${c2.name}${c3?' + '+c3.name:''} – keine Kombination!`); this._render(); return; }
     if (!State.discoveredCombos.includes(recipe.id)) { this._log(`🔒 ${recipe.name} noch nicht erforscht!`); this._render(); return; }
+    // Ingredient rarity validation
+    const _ingrs = [c1, c2].concat(c3 ? [c3] : []);
+    if (!checkIngredientsForRarity(recipe, _ingrs)) {
+      this._log(`❌ ${recipe.name}: ${ingredientRarityRequirement(recipe.rarity)}`); this._render(); return;
+    }
     // Mana = sum of ingredient costs
     const comboCost = (c1.cost||1) + (c2.cost||1) + (c3 ? (c3.cost||1) : 0);
     if (this.playerMana < comboCost) { this._log(`❌ Nicht genug Mana! Benötigt: 💎${comboCost}, vorhanden: 💎${this.playerMana}`); this._render(); return; }
@@ -1786,6 +1907,21 @@ const Battle = {
 
   endTurn() {
     if (this.phase !== 'player' || this.gameOver) return;
+    if (this.turn > 1) {
+      const unattacked = this.playerField.filter(c => !c.hasAttacked && !c.justPlayed);
+      if (unattacked.length > 0) {
+        const n = unattacked.length;
+        Game.showModal('⚔', 'Noch nicht angegriffen!',
+          `${n} Karte${n > 1 ? 'n haben' : ' hat'} noch nicht angegriffen.\nTrotzdem den Zug beenden?`,
+          'Trotzdem beenden', 'Zurück',
+          () => Battle._doEndTurn(), () => {});
+        return;
+      }
+    }
+    this._doEndTurn();
+  },
+
+  _doEndTurn() {
     this.attackMode = false; this.selectedAttackerIdx = -1;
     this.comboMode = false; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1; this.selectedHandIdx = -1;
     this.phase = 'enemy';
@@ -1912,16 +2048,18 @@ const Battle = {
       this.gameOver = true;
       this.phase = 'end';
       const key = State.currentRegion.id + '_' + this.enemy.id;
-      if (!State.defeatedEnemies.includes(key)) State.defeatedEnemies.push(key);
+      const isFirstWin = !State.defeatedEnemies.includes(key);
+      if (isFirstWin) State.defeatedEnemies.push(key);
+      const goldReward = isFirstWin ? 10 : 5;
+      State.player.gold += goldReward;
       const r = this.enemy.reward;
-      State.player.gold += r.gold;
       State.player.wins++;
       r.cards.forEach(id => { if (getCard(id)) Game.addCard(id); });
       Game.addXp(r.xp);
       UI.updateHud();
       Game.save();
       const cardsList = r.cards.map(id => { const c = getCard(id); return c ? `${c.emoji} ${c.name}` : id; }).join(', ');
-      const rewardHtml = `<div class="reward-list"><div class="reward-item">⭐ +${r.xp} XP</div><div class="reward-item">💰 +${r.gold} Gold</div><div class="reward-item">🃏 Neue Karten: ${cardsList}</div></div>`;
+      const rewardHtml = `<div class="reward-list"><div class="reward-item">⭐ +${r.xp} XP</div><div class="reward-item">💰 +${goldReward} Gold${isFirstWin ? ' 🌟' : ' (Wiederholung)'}</div><div class="reward-item">🃏 Neue Karten: ${cardsList}</div></div>`;
       setTimeout(() => {
         Game.showModal('🏆', 'Sieg!', rewardHtml, 'Zur Karte', null, () => {
           showScreen('screen-map'); UI.renderMap(); UI.updateHud();
@@ -1970,6 +2108,68 @@ const Battle = {
 
   _log(msg) {
     document.getElementById('battle-log').textContent = msg;
+  },
+};
+
+// ===== SHOP =====
+const Shop = {
+  render() {
+    const el = document.getElementById('shop-gold');
+    if (el) el.textContent = '💰' + State.player.gold;
+  },
+
+  openChest(type) {
+    const defs = {
+      truhe:        { cost: 100, name: 'Truhe',            emoji: '📦' },
+      selteneTruhe: { cost: 200, name: 'Seltene Truhe',    emoji: '🔵' },
+      epischeTruhe: { cost: 300, name: 'Epische Truhe',    emoji: '🟣' },
+      mythTruhe:    { cost: 500, name: 'Truhe der Mythen', emoji: '🔮' },
+    };
+    const def = defs[type];
+    if (!def) return;
+    if (State.player.gold < def.cost) {
+      UI.showToast(`❌ Nicht genug Gold! Benötigt: ${def.cost}`);
+      return;
+    }
+    State.player.gold -= def.cost;
+    const cards = this._rollCards(type);
+    cards.forEach(id => Game.addCard(id));
+    UI.updateHud();
+    const el = document.getElementById('shop-gold');
+    if (el) el.textContent = '💰' + State.player.gold;
+    Game.save();
+    const cardList = cards.map(id => {
+      const c = getCard(id);
+      return c ? `${c.emoji} <b>${c.name}</b> <span style="color:${rarityColor(c.rarity)}">(${(RARITY[c.rarity]||RARITY.common).label})</span>` : id;
+    }).join('<br>');
+    Game.showModal(def.emoji, def.name + ' geöffnet!',
+      `Du erhältst:<br><br>${cardList}`,
+      'Super!', null, () => {});
+  },
+
+  _rollCards(type) {
+    const commons = BASE_CARDS.filter(c => c.rarity === 'common');
+    const rares   = BASE_CARDS.filter(c => c.rarity === 'rare');
+    const epics   = BASE_CARDS.filter(c => c.rarity === 'epic');
+    const rand = arr => arr[Math.floor(Math.random() * arr.length)];
+    if (type === 'truhe') {
+      return [rand(commons).id];
+    } else if (type === 'selteneTruhe') {
+      const result = [rand(commons).id];
+      if (Math.random() < 0.30) result.push(rand(rares).id);
+      return result;
+    } else if (type === 'epischeTruhe') {
+      const result = [rand(commons).id];
+      const r = Math.random();
+      if (r < 0.20) result.push(rand(epics).id);
+      else if (r < 0.60) result.push(rand(rares).id);
+      return result;
+    } else if (type === 'mythTruhe') {
+      const result = [rand(rares).id];
+      if (Math.random() < 0.25) result.push(rand(epics).id);
+      return result;
+    }
+    return [];
   },
 };
 
