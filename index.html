@@ -1907,6 +1907,21 @@ const Battle = {
 
   endTurn() {
     if (this.phase !== 'player' || this.gameOver) return;
+    if (this.turn > 1) {
+      const unattacked = this.playerField.filter(c => !c.hasAttacked && !c.justPlayed);
+      if (unattacked.length > 0) {
+        const n = unattacked.length;
+        Game.showModal('⚔', 'Noch nicht angegriffen!',
+          `${n} Karte${n > 1 ? 'n haben' : ' hat'} noch nicht angegriffen.\nTrotzdem den Zug beenden?`,
+          'Trotzdem beenden', 'Zurück',
+          () => Battle._doEndTurn(), () => {});
+        return;
+      }
+    }
+    this._doEndTurn();
+  },
+
+  _doEndTurn() {
     this.attackMode = false; this.selectedAttackerIdx = -1;
     this.comboMode = false; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1; this.selectedHandIdx = -1;
     this.phase = 'enemy';
