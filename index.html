@@ -359,6 +359,7 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 .chest-name { font-size: 16px; font-weight: 700; color: var(--text); }
 .chest-desc { font-size: 12px; color: var(--text2); margin-top: 3px; line-height: 1.4; }
 .chest-price { font-size: 15px; color: var(--accent); font-weight: 800; margin-top: 5px; }
+.chest-pool { margin-top: 6px; line-height: 1.6; }
 .rarity-req-badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 20px; margin-top: 4px; font-weight: 700; }
 .rarity-req-common { background: rgba(136,136,136,0.2); color: var(--common); }
 .rarity-req-rare { background: rgba(59,130,246,0.2); color: var(--rare); }
@@ -582,6 +583,7 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
     <button class="filter-btn" onclick="UI.filterColl('legendary')">Legendär</button>
     <button class="filter-btn" onclick="UI.filterColl('mythic')">Mythisch</button>
   </div>
+  <div id="coll-stats" style="display:flex;gap:6px;padding:0 14px 8px;flex-shrink:0;flex-wrap:wrap"></div>
   <div class="card-grid" id="card-grid"></div>
 </div>
 
@@ -630,6 +632,7 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
         <div class="chest-desc">Enthält 1 zufällige <b>gewöhnliche</b> Basiskarte.</div>
         <span class="rarity-req-badge rarity-req-common">● Gewöhnlich</span>
         <div class="chest-price">💰 100 Gold</div>
+        <div id="pool-truhe" class="chest-pool"></div>
       </div>
     </div>
     <div class="chest-card" onclick="Shop.openChest('selteneTruhe')">
@@ -640,6 +643,7 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
         <span class="rarity-req-badge rarity-req-common">● Gewöhnlich</span>
         <span class="rarity-req-badge rarity-req-rare" style="margin-left:4px">◑ Selten 30%</span>
         <div class="chest-price">💰 200 Gold</div>
+        <div id="pool-selteneTruhe" class="chest-pool"></div>
       </div>
     </div>
     <div class="chest-card" onclick="Shop.openChest('epischeTruhe')">
@@ -651,6 +655,7 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
         <span class="rarity-req-badge rarity-req-rare" style="margin-left:4px">◑ Selten 40%</span>
         <span class="rarity-req-badge rarity-req-epic" style="margin-left:4px">◑ Episch 20%</span>
         <div class="chest-price">💰 300 Gold</div>
+        <div id="pool-epischeTruhe" class="chest-pool"></div>
       </div>
     </div>
     <div class="chest-card" onclick="Shop.openChest('mythTruhe')">
@@ -661,6 +666,7 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
         <span class="rarity-req-badge rarity-req-rare">● Selten</span>
         <span class="rarity-req-badge rarity-req-epic" style="margin-left:4px">◑ Episch 25%</span>
         <div class="chest-price">💰 500 Gold</div>
+        <div id="pool-mythTruhe" class="chest-pool"></div>
       </div>
     </div>
   </div>
@@ -1230,6 +1236,20 @@ const UI = {
     else if (f === 'endform') cards = cards.filter(c => c.isEndform);
     else if (['common','rare','epic','legendary','mythic'].includes(f)) cards = cards.filter(c => c.rarity === f);
     document.getElementById('coll-count').textContent = cards.length + ' Karten';
+    // Rarity stats (always over full collection, not current filter)
+    const statsEl = document.getElementById('coll-stats');
+    if (statsEl) {
+      const totals = {};
+      Object.keys(State.collection).forEach(id => {
+        if ((State.collection[id]||0) > 0) {
+          const c = getCard(id); if (c) totals[c.rarity] = (totals[c.rarity]||0) + State.collection[id];
+        }
+      });
+      const order = ['common','rare','epic','legendary','mythic'];
+      statsEl.innerHTML = order.filter(r => totals[r]).map(r =>
+        `<span onclick="UI.filterColl('${r}')" style="cursor:pointer;font-size:11px;color:${rarityColor(r)};background:rgba(0,0,0,0.35);padding:3px 9px;border-radius:20px;border:1px solid ${rarityColor(r)}40">● ${totals[r]} ${(RARITY[r]||RARITY.common).label}</span>`
+      ).join('');
+    }
     const grid = document.getElementById('card-grid');
     grid.innerHTML = '';
     cards.forEach(c => {
@@ -1411,15 +1431,22 @@ const UI = {
         const cardThumb = hasAll
           ? cardArt(rec.id, rec.emoji, 50)
           : `<div style="width:50px;height:75px;background:#0a0a0a;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid #333;flex-shrink:0">🔒</div>`;
-        const c3row = c3 ? `<br>${c3.emoji} <span style="color:${hasC3?'var(--green)':'var(--red)'};">${hasC3?'✓':'✗'}</span>` : '';
+        const ingLine = (c, has) => c
+          ? `${c.emoji} <span style="color:${rarityColor(c.rarity)};font-size:9px">●</span> <b style="font-size:10px;color:var(--text)">${c.name}</b> <span style="color:${has?'var(--green)':'var(--red)'};">${has?'✓':'✗'}</span>`
+          : '?';
+        const c3row = c3 ? ` + ${ingLine(c3, hasC3)}` : '';
+        const reqMap = {rare:'2× Gewöhnlich',epic:'1× Selten+',legendary:'1× Selten + 1× Episch',mythic:'alle 3 Selten+'};
+        const reqBadge = reqMap[rec.rarity]
+          ? `<span style="font-size:9px;color:var(--text3);background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;display:inline-block;margin-top:3px">⚔ Kampf: ${reqMap[rec.rarity]}</span>`
+          : '';
         html += `<div class="research-item${hasAll ? '' : ' locked'}">
           ${cardThumb}
           <div class="research-info">
             <div style="font-size:13px;font-weight:700">${hasAll ? rec.name : '???'} <span style="font-size:10px;color:${rarityColor(rec.rarity)}">${(RARITY[rec.rarity]||RARITY.common).label}</span>${rec.card3?'<span style="font-size:9px;color:var(--legendary);margin-left:4px">3 Karten</span>':''}</div>
-            <div style="font-size:11px;color:var(--text3)">
-              ${c1?.emoji||'?'} <span style="color:${hasC1?'var(--green)':'var(--red)'};">${hasC1?'✓':'✗'}</span>
-              + ${c2?.emoji||'?'} <span style="color:${hasC2?'var(--green)':'var(--red)'};">${hasC2?'✓':'✗'}</span>${c3row}
+            <div style="font-size:11px;color:var(--text3);line-height:1.6">
+              ${ingLine(c1, hasC1)} + ${ingLine(c2, hasC2)}${c3row}
             </div>
+            ${reqBadge}
           </div>
           <button class="research-btn" onclick="Lab.startResearch('${rec.id}')" ${canResearch ? '' : 'disabled'}>${btnLabel}</button>
         </div>`;
@@ -2116,6 +2143,25 @@ const Shop = {
   render() {
     const el = document.getElementById('shop-gold');
     if (el) el.textContent = '💰' + State.player.gold;
+
+    const commons = BASE_CARDS.filter(c => c.rarity === 'common');
+    const rares   = BASE_CARDS.filter(c => c.rarity === 'rare');
+    const epics   = BASE_CARDS.filter(c => c.rarity === 'epic');
+    const chip = c => `<span style="display:inline-block;font-size:10px;color:${rarityColor(c.rarity)};background:rgba(0,0,0,0.3);padding:2px 7px;border-radius:12px;border:1px solid ${rarityColor(c.rarity)}50;margin:2px 2px 0 0">${c.emoji} ${c.name}</span>`;
+    const label = txt => `<div style="font-size:9px;color:var(--text3);margin-bottom:2px">${txt}</div>`;
+    const pools = {
+      'pool-truhe':        { sections: [[commons, 'Gewöhnlich:']] },
+      'pool-selteneTruhe': { sections: [[commons, 'Gewöhnlich:'], [rares, 'Selten (30%):']] },
+      'pool-epischeTruhe': { sections: [[commons, 'Gewöhnlich:'], [rares, 'Selten (40%):'], [epics, 'Episch (20%):']] },
+      'pool-mythTruhe':    { sections: [[rares, 'Selten:'], [epics, 'Episch (25%):']] },
+    };
+    Object.entries(pools).forEach(([id, def]) => {
+      const poolEl = document.getElementById(id);
+      if (!poolEl) return;
+      poolEl.innerHTML = def.sections.map(([cards, lbl]) =>
+        label(lbl) + cards.map(chip).join('')
+      ).join('<div style="height:4px"></div>');
+    });
   },
 
   openChest(type) {
