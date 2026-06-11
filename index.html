@@ -147,10 +147,20 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 .field-slot.enemy-slot { cursor: default; }
 .field-slot.enemy-slot.target { border-color: var(--red); box-shadow: 0 0 12px rgba(192,57,43,0.4); cursor: pointer; }
 
-.mini-card { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 0; padding: 5px 3px; }
-.mini-card-emoji { font-size: 30px; line-height: 1; }
-.mini-card-name { font-size: 9.5px; color: var(--text); text-align: center; line-height: 1.2; font-weight: 700; }
-.mini-card-stats { font-size: 12px; display: flex; gap: 4px; font-weight: 900; }
+/* ---- HEARTHSTONE-STYLE FIELD CARD ---- */
+.mc { width:100%; height:100%; position:relative; display:flex; flex-direction:column; border-radius:5px; overflow:hidden; }
+.mc-top { flex-shrink:0; display:flex; align-items:center; gap:3px; padding:2px 3px 1px; background:rgba(0,0,0,0.78); }
+.mc-cost { width:18px; height:18px; border-radius:50%; background:radial-gradient(circle at 38% 38%,#74b9e8,#1a3a6a); border:1.5px solid #90d0ff; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:900; color:#fff; flex-shrink:0; box-shadow:0 1px 3px rgba(0,0,0,0.6); }
+.mc-nm { font-size:7.5px; font-weight:800; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; text-shadow:0 1px 2px rgba(0,0,0,0.9); line-height:1; }
+.mc-art { flex:1; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.mc-art img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.mc-em { font-size:32px; line-height:1; position:relative; z-index:1; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7)); }
+.mc-tags { position:absolute; bottom:2px; left:2px; display:flex; gap:1px; flex-wrap:wrap; z-index:3; max-width:100%; }
+.mc-bot { flex-shrink:0; display:flex; justify-content:space-between; align-items:center; padding:3px 4px; background:rgba(0,0,0,0.82); }
+.mc-atk { width:24px; height:24px; border-radius:50%; background:radial-gradient(circle at 38% 38%,#ff9a60,#c0392b); border:1.5px solid #ffd580; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:900; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,0.8); }
+.mc-def { width:24px; height:24px; border-radius:50%; background:radial-gradient(circle at 38% 38%,#74b9e8,#1a3a6a); border:1.5px solid #90d0ff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:900; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,0.8); }
+.mc.attacked { opacity:0.35; }
+.mc-sleep { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.35); z-index:6; pointer-events:none; font-size:20px; }
 .mini-atk { color: #ff8a65; }
 .mini-def { color: #64b5f6; }
 
@@ -390,7 +400,7 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 .mana-bar-val { font-size:13px; font-weight:900; color:#74b9e8; min-width:28px; text-align:right; margin-left:2px; }
 .mana-orb { width:16px; height:16px; border-radius:50%; background:#74b9e8; box-shadow:0 0 6px rgba(116,185,232,0.6); flex-shrink:0; transition:background 0.2s; }
 .mana-orb.spent { background:rgba(116,185,232,0.15); box-shadow:none; }
-.abil-tag.abil-sleep { background:rgba(100,100,100,0.3); color:#aaa; font-size:8px; padding:1px 4px; border-radius:4px; }
+.abil-tag.abil-sleep { background:rgba(80,80,80,0.6); color:#ccc; font-size:7px; padding:1px 3px; border-radius:3px; }
 .hand-card.unaffordable { opacity:0.28; cursor:not-allowed; }
 .abil-tag { font-size:8px; padding:1px 4px; border-radius:3px; font-weight:700; display:inline-block; margin-top:1px; line-height:1.4; }
 .abil-taunt { background:rgba(192,57,43,0.35); color:#ef9a9a; }
@@ -403,7 +413,6 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 .field-slot.selectable-attacker:hover { background: rgba(255,138,101,0.12); }
 .field-slot.active-attacker { border-color: #ff8a65 !important; box-shadow: 0 0 14px rgba(255,138,101,0.7); cursor: pointer; }
 .field-slot.active-attacker:hover { background: rgba(255,138,101,0.18); }
-.mini-card.attacked { opacity: 0.38; }
 
 /* ---- AUTH / LOGIN ---- */
 #screen-login {
@@ -646,7 +655,8 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
     </div>
     <div class="card-detail-desc" id="detail-desc"></div>
     <div class="card-detail-combos" id="detail-combos"></div>
-    <button class="modal-btn2" style="width:100%;margin-top:4px;" onclick="UI.closeCardDetail()">Schließen</button>
+    <button id="detail-battle-attack" class="modal-btn1" style="width:100%;margin-top:4px;display:none" onclick="Battle._detailAttack()">⚔ Angreifen</button>
+    <button class="modal-btn2" style="width:100%;margin-top:4px;" onclick="UI.closeCardDetail();Battle._cancelBattleDetail()">Schließen</button>
   </div>
 </div>
 
@@ -850,6 +860,10 @@ const CARD_EXTRAS = {
 // fire→ice, water→fire, thunder→water, ice→thunder
 const ELEMENT_ADVANTAGE = { fire:'ice', water:'fire', thunder:'water', ice:'thunder' };
 const CARD_IMG_BASE = 'https://ebpndnpiuummplxyhqai.supabase.co/storage/v1/object/public/card-images';
+
+const EL_BG = { fire:'#3d0e00', water:'#001a3d', ice:'#001a2d', thunder:'#1a1a00' };
+const RARITY_BG = { common:'#1c1c1c', rare:'#00162e', epic:'#12003a', legendary:'#2a1700', mythic:'#2a0000' };
+function mcBg(c) { return EL_BG[c.element] || RARITY_BG[c.rarity] || '#1c1c1c'; }
 
 const RESEARCH_DURATION = { common:1800000, rare:1800000, epic:3600000, legendary:14400000, mythic:14400000 };
 const RESEARCH_LABEL    = { common:'30 Min', rare:'30 Min', epic:'60 Min', legendary:'4 Std', mythic:'4 Std' };
@@ -1487,23 +1501,34 @@ const Battle = {
         if (canDirectAttack) cls += ' selectable-attacker';
         if (isActiveAttacker) cls += ' active-attacker';
         slot.className = cls;
-        const attackedCls = (!isEnemy && c.hasAttacked) ? ' attacked' : '';
         // Ability tags
         let tags = '';
-        if (c.justPlayed) tags += '<span class="abil-tag abil-sleep">💤</span>';
         if (c.taunt) tags += '<span class="abil-tag abil-taunt">SPOTT</span>';
         if (c.shieldActive) tags += '<span class="abil-tag abil-shield">🛡</span>';
         if (c.firstStrike) tags += '<span class="abil-tag abil-fast">⚡</span>';
         if (c.element) { const eMap={fire:'🔥',water:'💧',ice:'❄',thunder:'⚡'}; tags += `<div class="abil-element">${eMap[c.element]||''}</div>`; }
-        slot.innerHTML = `<div class="mini-card${attackedCls}">
-          <div class="mini-card-emoji">${c.emoji}</div>
-          <div class="mini-card-name">${c.name.length > 11 ? c.name.substring(0,10)+'…' : c.name}</div>
-          <div class="mini-card-stats"><span class="mini-atk">⚔${c.atk}</span><span class="mini-def">🛡${c.def}</span></div>
-          <div style="display:flex;gap:2px;flex-wrap:wrap;justify-content:center;">${tags}</div>
+        const sleepOverlay = c.justPlayed ? '<div class="mc-sleep">💤</div>' : '';
+        const mcCls = 'mc' + ((!isEnemy && c.hasAttacked) ? ' attacked' : '');
+        const imgUrl = `${CARD_IMG_BASE}/${c.id}.png`;
+        slot.innerHTML = `<div class="${mcCls}" style="background:${mcBg(c)}">
+          ${sleepOverlay}
+          <div class="mc-top">
+            <span class="mc-cost">${c.cost||1}</span>
+            <span class="mc-nm">${c.name.length > 10 ? c.name.substring(0,9)+'…' : c.name}</span>
+          </div>
+          <div class="mc-art">
+            <img src="${imgUrl}" onerror="this.style.display='none'">
+            <span class="mc-em">${c.emoji}</span>
+            <div class="mc-tags">${tags}</div>
+          </div>
+          <div class="mc-bot">
+            <div class="mc-atk">${c.atk}</div>
+            <div class="mc-def">${c.def}</div>
+          </div>
         </div>`;
         if (isTargetable) { const idx = i; slot.onclick = () => Battle._executeAttack(idx); }
-        else if (canDirectAttack) { const idx = i; slot.onclick = () => Battle._selectAttacker(idx); }
         else if (isActiveAttacker) { slot.onclick = () => { Battle.attackMode = false; Battle.selectedAttackerIdx = -1; Battle._log('Angriff abgebrochen.'); Battle._render(); }; }
+        else { const card = c; const idx = i; const canAtk = canDirectAttack; slot.onclick = () => Battle.showBattleCardDetail(card, canAtk ? idx : -1); }
       } else {
         slot.className = 'field-slot';
         slot.innerHTML = '<span style="font-size:11px;color:var(--text3)">·</span>';
@@ -1862,6 +1887,28 @@ const Battle = {
       return true;
     }
     return false;
+  },
+
+  _battleDetailAttackerIdx: -1,
+
+  showBattleCardDetail(card, attackerIdx) {
+    this._battleDetailAttackerIdx = attackerIdx ?? -1;
+    UI.showCardDetail(card);
+    const btn = document.getElementById('detail-battle-attack');
+    if (btn) btn.style.display = (attackerIdx >= 0) ? '' : 'none';
+  },
+
+  _cancelBattleDetail() {
+    this._battleDetailAttackerIdx = -1;
+    const btn = document.getElementById('detail-battle-attack');
+    if (btn) btn.style.display = 'none';
+  },
+
+  _detailAttack() {
+    const idx = this._battleDetailAttackerIdx;
+    this._cancelBattleDetail();
+    UI.closeCardDetail();
+    if (idx >= 0) this._selectAttacker(idx);
   },
 
   _log(msg) {
