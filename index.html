@@ -904,7 +904,8 @@ const Game = {
     State.player.gold = 0; State.player.wins = 0;
     State.deck = ['feuer','wasser','feuer','wasser','eis','ritter','troll','gnom','licht','schatten'];
     State.collection = { feuer:3, wasser:3, eis:2, ritter:2, gnom:2, troll:1, licht:1, schatten:1, elfe:1, flug:1 };
-    const _rc = COMBO_RECIPES[Math.floor(Math.random() * COMBO_RECIPES.length)];
+    const _startPool = COMBO_RECIPES.filter(r => r.rarity === 'rare' || r.rarity === 'epic');
+    const _rc = _startPool[Math.floor(Math.random() * _startPool.length)];
     State.discoveredCombos = [_rc.id];
     State.researchQueue = [];
     State.defeatedEnemies = [];
@@ -1193,6 +1194,31 @@ const UI = {
     const queueIds = queue.map(r => r.id);
     let html = '';
 
+    // Known combos — always at the top
+    html += `<div class="section-label" style="margin-bottom:8px;padding:0 2px">✨ Bekannte Kombinationen (${known.length})</div>`;
+    if (known.length === 0) {
+      html += `<div style="text-align:center;color:var(--text3);font-size:12px;padding:16px 0 8px">Noch keine Kombinationen entdeckt.<br>Erforsche unten eine neue!</div>`;
+    } else {
+      known.forEach(id => {
+        const rec = COMBO_RECIPES.find(c => c.id === id);
+        if (!rec) return;
+        const c1 = getCard(rec.card1), c2 = getCard(rec.card2);
+        const inColl = State.collection[id] || 0;
+        html += `<div class="research-item known">
+          <div style="cursor:pointer" onclick="UI.showCardDetail(getCard('${id}'))">${cardArt(id, rec.emoji, 40)}</div>
+          <div class="research-info" style="cursor:pointer" onclick="UI.showCardDetail(getCard('${id}'))">
+            <div style="font-size:13px;font-weight:700">${rec.name} <span style="font-size:10px;color:${rarityColor(rec.rarity)}">${(RARITY[rec.rarity]||RARITY.common).label}</span></div>
+            <div style="font-size:11px;color:var(--text3)">${c1?.emoji||'?'} + ${c2?.emoji||'?'} · <span class="atk-color">⚔${rec.atk}</span> <span class="def-color">🛡${rec.def}</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+            ${inColl > 0 ? `<span style="font-size:10px;color:var(--text3)">x${inColl}</span>` : ''}
+            <button class="research-btn forge" onclick="Lab.forge('${id}')">⚗ Herstellen</button>
+          </div>
+        </div>`;
+      });
+    }
+    html += '<div class="separator" style="margin:10px 0"></div>';
+
     // In research
     const active = queue.filter(r => !known.includes(r.id));
     if (active.length > 0) {
@@ -1209,29 +1235,6 @@ const UI = {
             <div style="font-size:11px;color:var(--text3)">⏱ Fertig in...</div>
           </div>
           <div class="research-timer" id="rtimer-${rec.id}">${fmtTime(remaining)}</div>
-        </div>`;
-      });
-      html += '<div class="separator" style="margin:10px 0"></div>';
-    }
-
-    // Known combos
-    if (known.length > 0) {
-      html += '<div class="section-label" style="margin-bottom:8px;padding:0 2px">✓ Bekannte Kombinationen</div>';
-      known.forEach(id => {
-        const rec = COMBO_RECIPES.find(c => c.id === id);
-        if (!rec) return;
-        const c1 = getCard(rec.card1), c2 = getCard(rec.card2);
-        const inColl = State.collection[id] || 0;
-        html += `<div class="research-item known">
-          <div style="cursor:pointer" onclick="UI.showCardDetail(getCard('${id}'))">${cardArt(id, rec.emoji, 40)}</div>
-          <div class="research-info" style="cursor:pointer" onclick="UI.showCardDetail(getCard('${id}'))">
-            <div style="font-size:13px;font-weight:700">${rec.name} <span style="font-size:10px;color:${rarityColor(rec.rarity)}">${(RARITY[rec.rarity]||RARITY.common).label}</span></div>
-            <div style="font-size:11px;color:var(--text3)">${c1?.emoji||'?'} + ${c2?.emoji||'?'} · <span class="atk-color">⚔${rec.atk}</span> <span class="def-color">🛡${rec.def}</span></div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
-            ${inColl > 0 ? `<span style="font-size:10px;color:var(--text3)">x${inColl}</span>` : ''}
-            <button class="research-btn forge" onclick="Lab.forge('${id}')">⚗ Herstellen</button>
-          </div>
         </div>`;
       });
       html += '<div class="separator" style="margin:10px 0"></div>';
@@ -1922,7 +1925,8 @@ const Auth = {
     State.player.gold = 0; State.player.wins = 0;
     State.deck = ['feuer','wasser','feuer','wasser','eis','ritter','troll','gnom','licht','schatten'];
     State.collection = { feuer:3, wasser:3, eis:2, ritter:2, gnom:2, troll:1, licht:1, schatten:1, elfe:1, flug:1 };
-    const _rc2 = COMBO_RECIPES[Math.floor(Math.random() * COMBO_RECIPES.length)];
+    const _startPool2 = COMBO_RECIPES.filter(r => r.rarity === 'rare' || r.rarity === 'epic');
+    const _rc2 = _startPool2[Math.floor(Math.random() * _startPool2.length)];
     State.discoveredCombos = [_rc2.id];
     State.researchQueue = [];
     State.defeatedEnemies = [];
