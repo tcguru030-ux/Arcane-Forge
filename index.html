@@ -867,7 +867,7 @@ const REGIONS = [
 
 // ===== GAME STATE =====
 const State = {
-  player: { name:'Magier', hp:100, maxHp:100, level:1, xp:0, xpNext:100, gold:0, wins:0 },
+  player: { name:'Magier', hp:80, maxHp:80, level:1, xp:0, xpNext:100, gold:0, wins:0 },
   deck: ['feuer','wasser','feuer','wasser','eis','ritter','troll','gnom','licht','schatten'],
   collection: { feuer:3, wasser:3, eis:2, ritter:2, gnom:2, troll:1, licht:1, schatten:1, elfe:1, flug:1 },
   discoveredCombos: [],
@@ -1053,7 +1053,7 @@ const Game = {
   newGame() {
     const name = prompt('Wie lautet dein Name, Magier?', 'Aldric') || 'Magier';
     State.player.name = name;
-    State.player.hp = 100; State.player.maxHp = 100;
+    State.player.hp = 80; State.player.maxHp = 80;
     State.player.level = 1; State.player.xp = 0; State.player.xpNext = 100;
     State.player.gold = 0; State.player.wins = 0;
     State.deck = ['feuer','wasser','feuer','wasser','eis','ritter','troll','gnom','licht','schatten'];
@@ -1114,7 +1114,7 @@ const Game = {
       State.player.xp -= State.player.xpNext;
       State.player.level++;
       State.player.xpNext = Math.floor(100 * Math.pow(1.35, State.player.level - 1));
-      State.player.maxHp = 100 + (State.player.level - 1) * 3;
+      State.player.maxHp = 80 + (State.player.level - 1) * 3;
       State.player.hp = State.player.maxHp;
       Game.showModal('🎉', 'Level Up!', `Du bist jetzt Level ${State.player.level}!\nMax HP: ${State.player.maxHp}`, 'Weiter', null, () => {});
     }
@@ -2232,7 +2232,7 @@ const Auth = {
     this.user = data.user;
     const name = email.split('@')[0] || 'Magier';
     State.player.name = name;
-    State.player.hp = 100; State.player.maxHp = 100;
+    State.player.hp = 80; State.player.maxHp = 80;
     State.player.level = 1; State.player.xp = 0; State.player.xpNext = 100;
     State.player.gold = 0; State.player.wins = 0;
     State.deck = ['feuer','wasser','feuer','wasser','eis','ritter','troll','gnom','licht','schatten'];
