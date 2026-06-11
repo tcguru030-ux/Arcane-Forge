@@ -967,7 +967,7 @@ const Game = {
   async saveToCloud() {
     if (!Auth.user) return;
     const data = { player: State.player, deck: State.deck, collection: State.collection, discoveredCombos: State.discoveredCombos, researchQueue: State.researchQueue, defeatedEnemies: State.defeatedEnemies };
-    try { await _supa.from('game_saves').upsert({ user_id: Auth.user.id, save_data: data }); } catch(e) {}
+    try { await _supa.from('game_saves').upsert({ user_id: Auth.user.id, save_data: data, updated_at: new Date().toISOString() }, { onConflict: 'user_id' }); } catch(e) { console.warn('Cloud save failed:', e); }
   },
   loadGame() {
     if (Auth.user) {
@@ -2037,20 +2037,21 @@ const Auth = {
     State.player.gold = 0; State.player.wins = 0;
     State.deck = ['feuer','wasser','feuer','wasser','eis','ritter','troll','gnom','licht','schatten'];
     State.collection = { feuer:3, wasser:3, eis:2, ritter:2, gnom:2, troll:1, licht:1, schatten:1, elfe:1, flug:1 };
-    const _startPool2 = COMBO_RECIPES.filter(r => r.rarity === 'rare' || r.rarity === 'epic');
-    const _rc2 = _startPool2[Math.floor(Math.random() * _startPool2.length)];
-    State.discoveredCombos = [_rc2.id];
+    const rarePool2 = COMBO_RECIPES.filter(r => r.rarity === 'rare').sort(() => Math.random() - 0.5);
+    State.discoveredCombos = rarePool2.slice(0, 2).map(r => r.id);
     State.researchQueue = [];
     State.defeatedEnemies = [];
-    if (!State.collection[_rc2.id]) State.collection[_rc2.id] = 0;
-    State.collection[_rc2.id]++;
     await Game.saveToCloud();
     try { await _supa.from('profiles').upsert({ id: this.user.id, username: name }); } catch(e) {}
     errEl.textContent = '';
-    showScreen('screen-menu');
+    showScreen('screen-combo');
+    UI.renderCombo();
     UI.updateHud();
-    UI.renderMap();
-    UI.showToast('✨ Willkommen bei Arcane Forge!');
+    const rc1 = COMBO_RECIPES.find(r => r.id === State.discoveredCombos[0]);
+    const rc2 = COMBO_RECIPES.find(r => r.id === State.discoveredCombos[1]);
+    setTimeout(() => Game.showModal('⚗', 'Willkommen im Labor, ' + name + '!',
+      `Du startest mit 2 bekannten Kombinationen:\n${rc1?rc1.emoji+' <b>'+rc1.name+'</b>':''}\n${rc2?rc2.emoji+' <b>'+rc2.name+'</b>':''}\n\n<b>So funktioniert das Labor:</b>\nErforsche neue Kombinationen – du brauchst beide Basiskarten in deiner Sammlung. Im Kampf kannst du 2 passende Basiskarten auf dem Feld zu einer mächtigen Endform kombinieren.\n\n<b>Seltenheiten &amp; Forschungszeiten:</b>\n<span style="color:var(--rare)">● Selten</span> – 30 Min &nbsp;&nbsp; <span style="color:var(--epic)">● Episch</span> – 60 Min\n<span style="color:var(--legendary)">● Legendär</span> – 4 Std &nbsp;&nbsp; <span style="color:var(--mythic)">● Mythisch</span> – 4 Std\n\nStarte eine Erforschung und begib dich dann ins Abenteuer!`,
+      'Los gehts!', null, () => {}), 500);
   },
 
   async logout() {
