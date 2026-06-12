@@ -256,17 +256,17 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 .bco-btn-def { background:rgba(126,200,232,0.1); border-color:#7ec8e8; color:#7ec8e8; }
 .bco-btn-back { background:none; border-color:var(--border2); color:var(--text2); }
 .bco-btn:disabled { opacity:0.4; cursor:not-allowed; }
-#bco-combo-view { display:none; flex-direction:column; width:100%; max-width:360px; gap:8px; }
+#bco-combo-view { display:none; flex-direction:column; width:100%; max-width:400px; gap:10px; padding-top:20px; }
 .bco-combo-row { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.04); border:1px solid var(--border2); border-radius:10px; padding:10px 12px; cursor:pointer; transition:border-color 0.15s; }
 .bco-combo-row.avail { border-color:rgba(124,92,191,0.5); }
 .bco-combo-row.unavail { opacity:0.55; cursor:default; }
-.bcm-card { display:flex; flex-direction:column; align-items:center; gap:2px; }
-.bcm-card img { width:38px; height:38px; object-fit:cover; border-radius:5px; }
+.bcm-card { display:flex; flex-direction:column; align-items:center; gap:3px; }
+.bcm-card img { width:60px; height:60px; object-fit:cover; border-radius:7px; }
 .bcm-card.missing img { filter:grayscale(1); opacity:0.4; }
-.bcm-card-name { font-size:8px; color:var(--text2); text-align:center; max-width:44px; }
-.bcm-sep { font-size:14px; color:var(--text3); }
-.bcm-result img { width:46px; height:46px; object-fit:cover; border-radius:5px; border:1px solid #9b7de870; }
-.bcm-result-name { font-size:9px; color:#c4b0f0; font-weight:700; text-align:center; max-width:56px; }
+.bcm-card-name { font-size:9px; color:var(--text2); text-align:center; max-width:64px; }
+.bcm-sep { font-size:18px; color:var(--text3); }
+.bcm-result img { width:70px; height:70px; object-fit:cover; border-radius:7px; border:2px solid #9b7de870; }
+.bcm-result-name { font-size:10px; color:#c4b0f0; font-weight:700; text-align:center; max-width:72px; }
 .field-slot.def-pos { outline: 2px solid #7ec8e8; }
 .field-slot.def-pos .mc { border-color:#7ec8e8; }
 .def-badge { position:absolute; bottom:2px; right:2px; font-size:8px; font-weight:900; color:#7ec8e8; background:rgba(0,30,60,0.9); border-radius:4px; padding:1px 3px; }
@@ -3125,7 +3125,7 @@ const Auth = {
   <div id="bco-combo-view">
     <div style="font-size:13px;font-weight:800;color:#c4b0f0;letter-spacing:1px;text-align:center;margin-bottom:4px">Kombinationen</div>
     <div id="bco-combo-list"></div>
-    <button class="bco-btn bco-btn-back" id="bco-combo-back" style="margin-top:4px">Zurück</button>
+    <button class="bco-btn bco-btn-back" id="bco-combo-back" style="margin-top:16px">Zurück</button>
   </div>
 </div>
 <!-- Battle context menu – outside all screens so fixed-position works correctly -->
