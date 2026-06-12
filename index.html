@@ -1742,6 +1742,7 @@ const Battle = {
     this.selectedHandIdx = -1; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1;
     this.comboMode = false; this.comboFieldIdx = -1; this.attackMode = false;
     this.selectAttackerMode = false; this.selectedAttackerIdx = -1;
+    this.ctxCardIdx = -1; this.ctxCardType = '';
     this.gameOver = false;
     this.playerMana = 1; this.playerMaxMana = 1; this.enemyMana = 1;
     for (let i = 0; i < 4; i++) this._drawCard('player');
@@ -2515,6 +2516,109 @@ const Battle = {
     this._cancelBattleDetail();
     UI.closeCardDetail();
     if (idx >= 0) this._selectAttacker(idx);
+  },
+
+  _showCtxMenu(type, idx, event) {
+    if (this.phase !== 'player' || this.gameOver) return;
+    const menu = document.getElementById('battle-ctx-menu');
+    if (!menu) return;
+    menu.innerHTML = '';
+    const addBtn = (label, cls, fn, disabled) => {
+      const btn = document.createElement('button');
+      btn.className = 'ctx-btn ' + cls + (disabled ? ' ctx-dimmed' : '');
+      btn.textContent = label;
+      if (!disabled) btn.onclick = (e) => { e.stopPropagation(); this._hideCtxMenu(); fn(); };
+      menu.appendChild(btn);
+    };
+    if (type === 'hand') {
+      const card = getCard(this.playerHand[idx]);
+      if (!card) return;
+      const cost = card.cost || 1;
+      const canAfford = this.playerMana >= cost;
+      const fieldFull = this.playerField.length >= 4;
+      addBtn('Spielen' + (canAfford ? '' : ' (kein Mana)'), 'ctx-play', () => {
+        this.selectedHandIdx = idx; this.playCard();
+      }, !canAfford || fieldFull);
+      if (this._handCardHasCombos(idx)) {
+        addBtn('Kombinieren', 'ctx-combo', () => {
+          this.comboMode = true; this.combo1Idx = idx; this.combo2Idx = -1; this.combo3Idx = -1; this.comboFieldIdx = -1;
+          this._log(`${card.name} gewählt – wähle weitere Karten...`);
+          this._render();
+        }, false);
+      }
+    } else if (type === 'field') {
+      const fieldCard = this.playerField[idx];
+      if (!fieldCard) return;
+      const canAtk = !fieldCard.hasAttacked && !fieldCard.justPlayed && this.turn > 1 && !fieldCard.defenseMode;
+      const inDefense = fieldCard.defenseMode || false;
+      addBtn('Angreifen', 'ctx-atk', () => this._selectAttacker(idx), !canAtk);
+      addBtn(inDefense ? 'Angriffsmodus' : 'Verteidigung', 'ctx-def', () => {
+        if (fieldCard.hasAttacked) { this._log('Bereits angegriffen – kein Moduswechsel!'); return; }
+        fieldCard.defenseMode = !inDefense;
+        this._log(fieldCard.defenseMode ? `${fieldCard.name} in Verteidigungsposition!` : `${fieldCard.name} in Angriffsposition!`);
+        this._render();
+      }, fieldCard.hasAttacked);
+      if (this._fieldCardHasCombos(idx)) {
+        addBtn('Kombinieren', 'ctx-combo', () => {
+          this.comboMode = true; this.comboFieldIdx = idx; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1;
+          this._log(`${fieldCard.name} (Feld) – wähle eine Handkarte...`);
+          this._render();
+        }, false);
+      }
+    }
+    const x = Math.min(event.clientX + 4, window.innerWidth - 160);
+    const y = Math.max(event.clientY - 60, 10);
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+    menu.style.display = 'flex';
+    // Click outside to dismiss
+    setTimeout(() => {
+      const dismiss = (e) => { if (!menu.contains(e.target)) { this._hideCtxMenu(); document.removeEventListener('click', dismiss); } };
+      document.addEventListener('click', dismiss);
+    }, 10);
+  },
+
+  _hideCtxMenu() {
+    const menu = document.getElementById('battle-ctx-menu');
+    if (menu) menu.style.display = 'none';
+  },
+
+  _handCardHasCombos(idx) {
+    const id = this.playerHand[idx];
+    const card = getCard(id);
+    if (!card || card.isEndform) return false;
+    const otherHandIds = this.playerHand.filter((_, i) => i !== idx);
+    for (const oid of otherHandIds) {
+      if (COMBO_RECIPES.some(r => State.discoveredCombos.includes(r.id) && !r.card3 && ((r.card1===id&&r.card2===oid)||(r.card1===oid&&r.card2===id)))) return true;
+      for (const tid of otherHandIds.filter(x=>x!==oid)) {
+        const ids = new Set([id,oid,tid]);
+        if (COMBO_RECIPES.some(r => r.card3 && State.discoveredCombos.includes(r.id) && ids.has(r.card1) && ids.has(r.card2) && ids.has(r.card3))) return true;
+      }
+    }
+    for (const fc of this.playerField) {
+      if (fc.isEndform) continue;
+      if (COMBO_RECIPES.some(r => State.discoveredCombos.includes(r.id) && !r.card3 && ((r.card1===id&&r.card2===fc.id)||(r.card1===fc.id&&r.card2===id)))) return true;
+      for (const oid of otherHandIds) {
+        const ids = new Set([fc.id,id,oid]);
+        if (COMBO_RECIPES.some(r => r.card3 && State.discoveredCombos.includes(r.id) && ids.has(r.card1) && ids.has(r.card2) && ids.has(r.card3))) return true;
+      }
+    }
+    return false;
+  },
+
+  _fieldCardHasCombos(idx) {
+    const fc = this.playerField[idx];
+    if (!fc || fc.isEndform) return false;
+    for (const hId of this.playerHand) {
+      const hc = getCard(hId);
+      if (!hc || hc.isEndform) continue;
+      if (COMBO_RECIPES.some(r => State.discoveredCombos.includes(r.id) && !r.card3 && ((r.card1===fc.id&&r.card2===hId)||(r.card1===hId&&r.card2===fc.id)))) return true;
+      for (const h2Id of this.playerHand.filter(x=>x!==hId)) {
+        const ids = new Set([fc.id,hId,h2Id]);
+        if (COMBO_RECIPES.some(r => r.card3 && State.discoveredCombos.includes(r.id) && ids.has(r.card1) && ids.has(r.card2) && ids.has(r.card3))) return true;
+      }
+    }
+    return false;
   },
 
   _log(msg) {
