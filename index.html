@@ -1068,11 +1068,31 @@ const Game = {
     UI.updateHud();
     const c1 = COMBO_RECIPES.find(r => r.id === State.discoveredCombos[0]);
     const c2 = COMBO_RECIPES.find(r => r.id === State.discoveredCombos[1]);
-    setTimeout(() => Game.showModal(
-      '⚗', 'Willkommen im Labor, ' + name + '!',
-      `Du startest mit 2 bekannten Kombinationen:\n${c1 ? c1.emoji + ' <b>' + c1.name + '</b>' : ''}\n${c2 ? c2.emoji + ' <b>' + c2.name + '</b>' : ''}\n\n<b>So funktioniert das Labor:</b>\nErforsche neue Kombinationen – du brauchst beide Basiskarten in deiner Sammlung. Im Kampf kannst du 2 passende Basiskarten auf dem Feld zu einer mächtigen Endform kombinieren.\n\n<b>Seltenheiten &amp; Forschungszeiten:</b>\n<span style="color:var(--rare)">● Selten</span> – 30 Min &nbsp;&nbsp; <span style="color:var(--epic)">● Episch</span> – 60 Min\n<span style="color:var(--legendary)">● Legendär</span> – 4 Std &nbsp;&nbsp; <span style="color:var(--mythic)">● Mythisch</span> – 4 Std\n\nStarte eine Erforschung und begib dich dann ins Abenteuer!`,
-      'Los gehts!', null, () => {}
-    ), 500);
+    // Welcome chest flow → then lab tutorial
+    const _showLabTutorial = () => {
+      Game.showModal(
+        '⚗', 'Willkommen im Labor, ' + name + '!',
+        `Du startest mit 2 bekannten Kombinationen:\n${c1 ? c1.emoji + ' <b>' + c1.name + '</b>' : ''}\n${c2 ? c2.emoji + ' <b>' + c2.name + '</b>' : ''}\n\n<b>So funktioniert das Labor:</b>\nErforsche neue Kombinationen – du brauchst beide Basiskarten in deiner Sammlung. Im Kampf kannst du 2 passende Basiskarten auf dem Feld zu einer mächtigen Endform kombinieren.\n\n<b>Seltenheiten &amp; Forschungszeiten:</b>\n<span style="color:var(--rare)">● Selten</span> – 30 Min &nbsp;&nbsp; <span style="color:var(--epic)">● Episch</span> – 60 Min\n<span style="color:var(--legendary)">● Legendär</span> – 4 Std &nbsp;&nbsp; <span style="color:var(--mythic)">● Mythisch</span> – 4 Std\n\nStarte eine Erforschung und begib dich dann ins Abenteuer!`,
+        'Los gehts!', null, () => {}
+      );
+    };
+    setTimeout(() => {
+      Game.showModal(
+        '🎁',
+        'Willkommen, ' + name + '!',
+        `<div style="text-align:center;line-height:2">Danke, dass du <b>Arcane Forge</b> spielst!<br>Als Dankeschön erhältst du eine kostenlose<br><span style="font-size:22px">🔵</span><br><b style="color:var(--rare)">Willkommens-Truhe</b><br><span style="font-size:11px;color:var(--text3)">2× Gewöhnlich + 1× Selten garantiert</span></div>`,
+        '🔵 Truhe öffnen!', null,
+        () => {
+          const commons = BASE_CARDS.filter(c => c.rarity === 'common');
+          const rares   = BASE_CARDS.filter(c => c.rarity === 'rare');
+          const rand = arr => arr[Math.floor(Math.random() * arr.length)];
+          const cards = [rand(commons).id, rand(commons).id, rand(rares).id];
+          cards.forEach(id => Game.addCard(id));
+          Game.save();
+          Shop._showChestAnim({ name: 'Willkommens-Truhe', emoji: '🔵' }, cards, _showLabTutorial);
+        }
+      );
+    }, 400);
   },
   save() {
     const data = { player: State.player, deck: State.deck, collection: State.collection, discoveredCombos: State.discoveredCombos, researchQueue: State.researchQueue, defeatedEnemies: State.defeatedEnemies };
