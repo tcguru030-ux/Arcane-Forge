@@ -2540,6 +2540,150 @@ const Battle = {
     if (idx >= 0) this._selectAttacker(idx);
   },
 
+  _showBco(type, idx) {
+    if (this.gameOver) return;
+    if (this.phase !== 'player' && type === 'hand') return;
+    this._bcoType = type;
+    this._bcoIdx = idx;
+    const card = type === 'hand' ? getCard(this.playerHand[idx]) : this.playerField[idx];
+    if (!card) return;
+    const cost = CARD_EXTRAS[card.id]?.cost || card.cost || 1;
+    const rarLbl = (RARITY[card.rarity]||RARITY.common).label;
+    const abilHtml = card.ability ? `<div style="padding:8px 12px;background:rgba(124,92,191,0.1);border:1px solid rgba(124,92,191,0.25);border-radius:8px;font-size:12px;color:#c4b0f0;font-weight:600;text-align:center;max-width:280px">${card.ability}</div>` : '';
+    document.getElementById('bco-card-display').innerHTML = `
+      <div style="margin-bottom:2px">${cardArt(card.id, card.emoji, 120)}</div>
+      <div style="font-size:21px;font-weight:900;color:${rarityColor(card.rarity)}">${card.name}</div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center">
+        <span style="font-size:11px;color:${rarityColor(card.rarity)};border:1px solid ${rarityColor(card.rarity)}50;border-radius:20px;padding:2px 10px">${rarLbl}</span>
+        <span style="font-size:12px;color:var(--accent);font-weight:700">Mana: ${cost}</span>
+        <span style="font-size:11px;color:var(--text2)">${card.type==='element'?'Element':'Kreatur'}</span>
+      </div>
+      <div style="display:flex;gap:24px;font-size:20px;font-weight:900">
+        <span style="color:var(--red)">ATK ${card.atk}</span>
+        <span style="color:var(--accent)">DEF ${card.def}</span>
+      </div>
+      ${abilHtml}
+      ${card.desc ? `<div style="font-size:12px;color:var(--text2);text-align:center;font-style:italic;max-width:280px">${card.desc}</div>` : ''}`;
+    const actions = document.getElementById('bco-actions');
+    actions.innerHTML = '';
+    const addBtn = (label, cls, fn, disabled) => {
+      const btn = document.createElement('button');
+      btn.className = 'bco-btn ' + cls;
+      btn.textContent = label;
+      btn.disabled = !!disabled;
+      if (!disabled && fn) btn.onclick = fn;
+      actions.appendChild(btn);
+    };
+    if (type === 'hand') {
+      const cardObj = getCard(this.playerHand[idx]);
+      const cardCost = cardObj?.cost || 1;
+      const canAfford = this.playerMana >= cardCost;
+      const fieldFull = this.playerField.length >= 4;
+      addBtn(canAfford ? 'Spielen' : 'Spielen (kein Mana)', 'bco-btn-play', () => { this._hideBco(); this.selectedHandIdx = idx; this.playCard(); }, !canAfford || fieldFull);
+      if (this._getCombosForCard(type, idx).length > 0) addBtn('Kombinieren', 'bco-btn-combo', () => this._showBcoComboView());
+      addBtn('Zurück', 'bco-btn-back', () => this._hideBco());
+    } else {
+      const fc = this.playerField[idx];
+      const canAtk = fc && !fc.hasAttacked && !fc.justPlayed && this.turn > 1 && !fc.defenseMode;
+      const inDef = fc?.defenseMode || false;
+      addBtn('Angreifen', 'bco-btn-atk', () => { this._hideBco(); this._selectAttacker(idx); }, !canAtk);
+      addBtn(inDef ? 'Angriffsmodus' : 'Verteidigung', 'bco-btn-def', () => {
+        if (!fc || fc.hasAttacked) return;
+        fc.defenseMode = !inDef;
+        this._hideBco();
+        this._log(fc.defenseMode ? `${fc.name} in Verteidigungsposition!` : `${fc.name} in Angriffsposition!`);
+        this._render();
+      }, fc?.hasAttacked);
+      if (this._getCombosForCard(type, idx).length > 0) addBtn('Kombinieren', 'bco-btn-combo', () => this._showBcoComboView());
+      addBtn('Zurück', 'bco-btn-back', () => this._hideBco());
+    }
+    document.getElementById('bco-detail').style.display = 'flex';
+    document.getElementById('bco-combo-view').style.display = 'none';
+    document.getElementById('battle-card-overlay').classList.add('active');
+  },
+
+  _hideBco() {
+    const o = document.getElementById('battle-card-overlay');
+    if (o) o.classList.remove('active');
+  },
+
+  _getCombosForCard(type, idx) {
+    const id = type === 'hand' ? this.playerHand[idx] : this.playerField[idx]?.id;
+    if (!id) return [];
+    return COMBO_RECIPES.filter(r => State.discoveredCombos.includes(r.id) && (r.card1===id||r.card2===id||(r.card3&&r.card3===id)));
+  },
+
+  _showBcoComboView() {
+    const type = this._bcoType, idx = this._bcoIdx;
+    const combos = this._getCombosForCard(type, idx);
+    const handIds = [...this.playerHand];
+    const fieldIds = this.playerField.map(c => c.id);
+    const allAvail = [...handIds, ...fieldIds];
+    document.getElementById('bco-detail').style.display = 'none';
+    const cv = document.getElementById('bco-combo-view');
+    cv.style.display = 'flex';
+    const list = document.getElementById('bco-combo-list');
+    list.innerHTML = '';
+    if (combos.length === 0) { list.innerHTML = '<div style="font-size:13px;color:var(--text3);text-align:center;padding:12px">Keine Kombinationen verfügbar</div>'; }
+    combos.forEach(recipe => {
+      const ings = [recipe.card1, recipe.card2, recipe.card3].filter(Boolean);
+      const canDo = ings.every(ing => allAvail.includes(ing));
+      const row = document.createElement('div');
+      row.className = 'bco-combo-row ' + (canDo ? 'avail' : 'unavail');
+      let html = '<div style="display:flex;align-items:center;gap:4px;flex:1">';
+      ings.forEach((ing, i) => {
+        const ic = getCard(ing);
+        if (!ic) return;
+        const have = allAvail.includes(ing);
+        const onField = fieldIds.includes(ing);
+        html += `<div class="bcm-card${have?'':' missing'}">
+          <img src="${cardImgUrl(ing)}" onerror="this.style.display='none'">
+          <div class="bcm-card-name">${ic.name.substring(0,8)}${onField?'<br><span style="color:#9ddff5;font-size:7px">FELD</span>':''}</div>
+        </div>`;
+        if (i < ings.length - 1) html += '<span class="bcm-sep">+</span>';
+      });
+      html += `<span class="bcm-sep" style="margin:0 4px">=</span>
+        <div class="bcm-result" style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <img src="${cardImgUrl(recipe.id)}" onerror="this.style.display='none'">
+          <div class="bcm-result-name">${recipe.name}</div>
+          <div style="font-size:9px;color:${rarityColor(recipe.rarity)}">${(RARITY[recipe.rarity]||RARITY.common).label}</div>
+        </div>`;
+      html += '</div>';
+      row.innerHTML = html;
+      if (canDo) row.onclick = () => { this._hideBco(); this._executeBcoCombo(recipe); };
+      else row.onclick = () => UI.showToast('Zutaten fehlen in Hand/Feld!');
+      list.appendChild(row);
+    });
+    document.getElementById('bco-combo-back').onclick = () => { cv.style.display='none'; document.getElementById('bco-detail').style.display='flex'; };
+  },
+
+  _executeBcoCombo(recipe) {
+    const ings = [recipe.card1, recipe.card2, recipe.card3].filter(Boolean);
+    const handIds = this.playerHand;
+    const fieldIds = this.playerField.map(c => c.id);
+    this.comboMode = true;
+    this.comboFieldIdx = -1; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1;
+    // Assign field ingredient first
+    for (const ing of ings) {
+      const fi = this.playerField.findIndex(c => c.id === ing);
+      if (fi >= 0 && this.comboFieldIdx < 0) { this.comboFieldIdx = fi; break; }
+    }
+    // Assign hand ingredients
+    let hSlot = 0;
+    for (const ing of ings) {
+      if (this.comboFieldIdx >= 0 && this.playerField[this.comboFieldIdx]?.id === ing) continue;
+      let hIdx = -1;
+      for (let i = 0; i < handIds.length; i++) {
+        if (handIds[i] === ing && i !== this.combo1Idx && i !== this.combo2Idx) { hIdx = i; break; }
+      }
+      if (hIdx < 0) continue;
+      if (hSlot === 0) { this.combo1Idx = hIdx; hSlot++; }
+      else if (hSlot === 1) { this.combo2Idx = hIdx; hSlot++; }
+      else if (hSlot === 2) { this.combo3Idx = hIdx; hSlot++; }
+    }
+    this._executeCombo();
+  },
+
   _showCtxMenu(type, idx, event) {
     if (this.phase !== 'player' || this.gameOver) return;
     const menu = document.getElementById('battle-ctx-menu');
