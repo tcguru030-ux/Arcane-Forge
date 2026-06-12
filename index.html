@@ -2597,6 +2597,16 @@ const Auth = {
   preloadCardImages();
   showScreen('screen-login');
   if (_supa) Auth.init();
+
+  // Auto-save when user leaves the app/tab (most important on mobile)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && Auth.user) Game.saveToCloud();
+  });
+
+  // Periodic auto-save every 2 minutes (background sync)
+  setInterval(() => {
+    if (Auth.user) Game.saveToCloud();
+  }, 120000);
 })();
 </script>
 </body>
