@@ -245,6 +245,28 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 .ctx-btn.ctx-combo { color:#c4b0f0; }
 .ctx-btn.ctx-play { color:var(--green); }
 .ctx-btn.ctx-dimmed { opacity:0.45; cursor:not-allowed; }
+#battle-card-overlay { display:none; position:fixed; inset:0; z-index:1500; background:rgba(0,0,0,0.95); flex-direction:column; align-items:center; padding:16px 16px 12px; box-sizing:border-box; gap:0; overflow-y:auto; }
+#battle-card-overlay.active { display:flex; }
+#bco-detail { display:flex; flex-direction:column; align-items:center; gap:8px; width:100%; max-width:320px; flex:1; }
+#bco-actions { display:flex; flex-direction:column; gap:7px; width:100%; max-width:320px; margin-top:10px; flex-shrink:0; }
+.bco-btn { padding:13px; border-radius:12px; font-size:15px; font-weight:800; cursor:pointer; font-family:var(--font); border:1px solid; width:100%; text-align:center; letter-spacing:0.5px; }
+.bco-btn-play { background:rgba(126,200,232,0.15); border-color:var(--accent); color:var(--accent); }
+.bco-btn-combo { background:rgba(124,92,191,0.12); border-color:#9b7de8; color:#c4b0f0; }
+.bco-btn-atk { background:rgba(239,71,111,0.12); border-color:var(--red); color:var(--red); }
+.bco-btn-def { background:rgba(126,200,232,0.1); border-color:#7ec8e8; color:#7ec8e8; }
+.bco-btn-back { background:none; border-color:var(--border2); color:var(--text2); }
+.bco-btn:disabled { opacity:0.4; cursor:not-allowed; }
+#bco-combo-view { display:none; flex-direction:column; width:100%; max-width:360px; gap:8px; }
+.bco-combo-row { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.04); border:1px solid var(--border2); border-radius:10px; padding:10px 12px; cursor:pointer; transition:border-color 0.15s; }
+.bco-combo-row.avail { border-color:rgba(124,92,191,0.5); }
+.bco-combo-row.unavail { opacity:0.55; cursor:default; }
+.bcm-card { display:flex; flex-direction:column; align-items:center; gap:2px; }
+.bcm-card img { width:38px; height:38px; object-fit:cover; border-radius:5px; }
+.bcm-card.missing img { filter:grayscale(1); opacity:0.4; }
+.bcm-card-name { font-size:8px; color:var(--text2); text-align:center; max-width:44px; }
+.bcm-sep { font-size:14px; color:var(--text3); }
+.bcm-result img { width:46px; height:46px; object-fit:cover; border-radius:5px; border:1px solid #9b7de870; }
+.bcm-result-name { font-size:9px; color:#c4b0f0; font-weight:700; text-align:center; max-width:56px; }
 .field-slot.def-pos { outline: 2px solid #7ec8e8; }
 .field-slot.def-pos .mc { border-color:#7ec8e8; }
 .def-badge { position:absolute; bottom:2px; right:2px; font-size:8px; font-weight:900; color:#7ec8e8; background:rgba(0,30,60,0.9); border-radius:4px; padding:1px 3px; }
@@ -1742,6 +1764,7 @@ const Battle = {
     this.comboMode = false; this.comboFieldIdx = -1; this.attackMode = false;
     this.selectAttackerMode = false; this.selectedAttackerIdx = -1;
     this.ctxCardIdx = -1; this.ctxCardType = '';
+    this._bcoType = ''; this._bcoIdx = -1;
     this.gameOver = false;
     this.playerMana = 1; this.playerMaxMana = 1; this.enemyMana = 1;
     for (let i = 0; i < 4; i++) this._drawCard('player');
@@ -1842,7 +1865,7 @@ const Battle = {
     const active = isPlayer && !this.gameOver;
     const unattacked = this.playerField.filter(c => !c.hasAttacked).length;
     document.getElementById('btn-endturn').disabled = !active || this.attackMode;
-    this._hideCtxMenu();
+    this._hideBco();
   },
 
   _renderComboHints() {
@@ -1959,7 +1982,7 @@ const Battle = {
         else if (isActiveAttacker) { slot.onclick = () => { Battle.attackMode = false; Battle.selectedAttackerIdx = -1; Battle._log('Angriff abgebrochen.'); Battle._render(); }; }
         else if (isSelectedComboField) { const idx = i; slot.onclick = () => Battle._selectFieldComboCard(idx); }
         else if (isComboField) { const idx = i; slot.onclick = () => Battle._selectFieldComboCard(idx); }
-        else if (!isEnemy) { const idx = i; slot.onclick = (e) => { if (Battle.comboMode) Battle._selectFieldComboCard(idx); else { e.stopPropagation(); Battle._showCtxMenu('field', idx, e); } }; }
+        else if (!isEnemy) { const idx = i; slot.onclick = () => { if (Battle.comboMode) Battle._selectFieldComboCard(idx); else Battle._showBco('field', idx); }; }
         else { const card = c; slot.onclick = () => Battle.showBattleCardDetail(card, -1); }
       } else {
         slot.className = 'field-slot';
@@ -2019,9 +2042,9 @@ const Battle = {
       if (!canAfford && !this.comboMode) cls += ' unaffordable';
       div.className = cls;
       div.innerHTML = `<div class="mana-cost-badge">${cardCost}</div><div class="hc-art"><img src="${cardImgUrl(c.id)}" onerror="this.style.display='none';this.nextSibling.style.display='block'"><span class="hc-em">${c.emoji}</span></div><div class="hc-foot"><div class="hand-card-name">${c.name}</div><div class="hand-card-stats"><span class="mini-atk">⚔${c.atk}</span><span class="mini-def">🛡${c.def}</span></div></div>`;
-      div.onclick = (e) => {
+      div.onclick = () => {
         if (Battle.comboMode) { Battle._selectHandCard(idx); }
-        else { e.stopPropagation(); Battle._showCtxMenu('hand', idx, e); }
+        else { Battle._showBco('hand', idx); }
       };
       el.appendChild(div);
     });
@@ -2275,7 +2298,7 @@ const Battle = {
   },
 
   _doEndTurn() {
-    this._hideCtxMenu();
+    this._hideBco();
     this.attackMode = false; this.selectedAttackerIdx = -1;
     this.comboMode = false; this.comboFieldIdx = -1; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1; this.selectedHandIdx = -1;
     this.phase = 'enemy';
@@ -2948,6 +2971,17 @@ const Auth = {
     <div style="font-size:20px;font-weight:800;color:var(--accent)" id="chest-anim-title">Du erhältst!</div>
     <div id="chest-result-cards" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap"></div>
     <button id="chest-anim-close-btn" style="margin-top:8px;padding:13px 36px;border-radius:12px;border:1px solid var(--accent);background:rgba(200,166,74,0.2);color:var(--accent);font-size:16px;font-weight:800;cursor:pointer;font-family:var(--font)">Super! ✨</button>
+  </div>
+</div>
+<div id="battle-card-overlay">
+  <div id="bco-detail">
+    <div id="bco-card-display" style="display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;"></div>
+  </div>
+  <div id="bco-actions"></div>
+  <div id="bco-combo-view">
+    <div style="font-size:13px;font-weight:800;color:#c4b0f0;letter-spacing:1px;text-align:center;margin-bottom:4px">Kombinationen</div>
+    <div id="bco-combo-list"></div>
+    <button class="bco-btn bco-btn-back" id="bco-combo-back" style="margin-top:4px">Zurück</button>
   </div>
 </div>
 <!-- Battle context menu – outside all screens so fixed-position works correctly -->
