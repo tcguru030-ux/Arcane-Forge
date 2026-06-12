@@ -186,6 +186,7 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 .field-slot.selectable:hover { background: rgba(126,200,232,0.08); }
 .field-slot.enemy-slot { cursor: default; }
 .field-slot.enemy-slot.target { border-color: var(--red); box-shadow: 0 0 12px rgba(192,57,43,0.4); cursor: pointer; }
+.field-slot.ability-target { border-color: #f0a500 !important; box-shadow: 0 0 14px rgba(240,165,0,0.6) !important; animation: pulse 0.8s infinite; }
 
 /* ---- HEARTHSTONE-STYLE FIELD CARD ---- */
 .mc { width:100%; height:100%; position:relative; border-radius:5px; overflow:hidden; background:#0a0a0a; }
@@ -1776,6 +1777,7 @@ const Battle = {
     this.selectAttackerMode = false; this.selectedAttackerIdx = -1;
     this.ctxCardIdx = -1; this.ctxCardType = '';
     this._bcoType = ''; this._bcoIdx = -1;
+    this.abilityTargetMode = null;
     this.gameOver = false;
     this.playerMana = 1; this.playerMaxMana = 1; this.enemyMana = 1;
     for (let i = 0; i < 4; i++) this._drawCard('player');
@@ -1952,15 +1954,17 @@ const Battle = {
         const c = field[i];
         // Taunt restriction: if any enemy card has taunt, only those are targetable
         const hasTauntOnField = isEnemy && this.enemyField.some(fc => fc.taunt);
+        const isAbilityTarget = isEnemy && !!this.abilityTargetMode && !this.gameOver;
         const isTargetable = isEnemy && this.attackMode && (!hasTauntOnField || c.taunt);
         const isActiveAttacker = !isEnemy && this.attackMode && this.selectedAttackerIdx === i;
         const canDirectAttack = !isEnemy && this.phase === 'player'
-          && !c.hasAttacked && !c.justPlayed && !this.attackMode && !this.comboMode && !this.gameOver;
+          && !c.hasAttacked && !c.justPlayed && !this.attackMode && !this.comboMode && !this.abilityTargetMode && !this.gameOver;
         const isComboField = !isEnemy && this.comboMode && !c.isEndform && !this.gameOver && this.comboFieldIdx < 0;
         const isSelectedComboField = !isEnemy && this.comboFieldIdx === i;
         let cls = 'field-slot occupied';
         if (isEnemy) cls += ' enemy-slot';
-        if (isTargetable) cls += ' target';
+        if (isAbilityTarget) cls += ' target ability-target';
+        else if (isTargetable) cls += ' target';
         if (canDirectAttack) cls += ' selectable-attacker';
         if (isActiveAttacker) cls += ' active-attacker';
         if (isComboField) cls += ' selectable-attacker';
@@ -1989,7 +1993,8 @@ const Battle = {
           <div class="mc-atk">${c.atk}</div>
           <div class="mc-def">${c.def}</div>
         </div>`;
-        if (isTargetable) { const idx = i; slot.onclick = () => Battle._executeAttack(idx); }
+        if (isAbilityTarget) { const idx = i; slot.onclick = () => Battle._resolveAbilityTarget(idx); }
+        else if (isTargetable) { const idx = i; slot.onclick = () => Battle._executeAttack(idx); }
         else if (isActiveAttacker) { slot.onclick = () => { Battle.attackMode = false; Battle.selectedAttackerIdx = -1; Battle._log('Angriff abgebrochen.'); Battle._render(); }; }
         else if (isSelectedComboField) { const idx = i; slot.onclick = () => Battle._selectFieldComboCard(idx); }
         else if (isComboField) { const idx = i; slot.onclick = () => Battle._selectFieldComboCard(idx); }
@@ -2117,11 +2122,10 @@ const Battle = {
     this.playerMana -= cost;
     this.playerField.push({ ...c, id, hasAttacked: false, justPlayed: true, shieldActive: c.shield ? true : false });
     this.selectedHandIdx = -1;
-    this._log(`Du spielst ${c.emoji} ${c.name}. (⚔${c.atk} 🛡${c.def})`);
-    if (c.ability && c.ability.includes('Heilstrom')) { this.playerHp = Math.min(this.playerMaxHp, this.playerHp + 3); this._log('💧 Heilstrom heilt 3 LP!'); }
-    if (c.ability && c.ability.includes('Feuerbombe')) { this.enemyHp = Math.max(0, this.enemyHp - 3); this._log('💥 Feuerbombe trifft für 3 Schaden!'); }
+    this._log(`Du spielst ${c.name}. (ATK ${c.atk} DEF ${c.def})`);
+    const needsTarget = this._applyOnPlayAbility(c);
     this._render();
-    this._checkWin();
+    if (!needsTarget) this._checkWin();
   },
 
   startCombo() {
@@ -2191,10 +2195,9 @@ const Battle = {
 
     const resultCard = getCard(recipe.id);
     const result = { ...recipe, ...resultCard, id: recipe.id, isEndform: true, hasAttacked: false, justPlayed: true, shieldActive: resultCard?.shield ? true : false };
-    this._log(`✨ ${allCards.map(c=>`${c.emoji}${c.name}`).join(' + ')} = ${recipe.emoji} ${recipe.name}! (⚔${recipe.atk} 🛡${recipe.def})`);
+    this._log(`${recipe.name} beschworen! (ATK ${recipe.atk} DEF ${recipe.def})`);
 
     if (hasField) {
-      // Replace field card in place (can't attack this round: justPlayed=true)
       this.playerGraveyard.push(fieldId);
       this.playerField[fieldSlotIdx] = result;
     } else if (this.playerField.length < 4) {
@@ -2203,7 +2206,9 @@ const Battle = {
       this._log('Feld voll – Kombination geht in die Hand.');
       this.playerHand.push(recipe.id);
     }
+    const needsTarget = this._applyOnPlayAbility(result);
     this._render();
+    if (!needsTarget) this._checkWin();
   },
 
   attack() {
@@ -2338,7 +2343,23 @@ const Battle = {
       if (bestIdx < 0) break;
       const id = this.enemyHand.splice(bestIdx, 1)[0];
       const c = getCard(id);
-      if (c) { this.enemyMana -= (c.cost || 1); this.enemyField.push({ ...c, id, hasAttacked: false, justPlayed: true, shieldActive: c.shield ? true : false }); this._log(`👺 ${this.enemy.name} spielt ${c.emoji} ${c.name}. (⚔${c.atk} 🛡${c.def})`); this._render(); }
+      if (c) {
+        this.enemyMana -= (c.cost || 1);
+        const newCard = { ...c, id, hasAttacked: false, justPlayed: true, shieldActive: c.shield ? true : false };
+        // AI: put high-DEF low-ATK cards in defense mode (DEF >= ATK * 1.4)
+        if (c.def >= c.atk * 1.4 && this.enemyField.some(f => !f.defenseMode)) {
+          newCard.defenseMode = true;
+        }
+        this.enemyField.push(newCard);
+        this._log(`${this.enemy.name} spielt ${c.name}. (ATK ${c.atk} DEF ${c.def})`);
+        this._render();
+      }
+    }
+    // AI: switch existing weak-ATK cards to defense mode if enemy HP is low
+    if (this.enemyHp < this.enemyMaxHp * 0.4) {
+      this.enemyField.forEach(f => {
+        if (!f.hasAttacked && !f.defenseMode && f.def > f.atk) f.defenseMode = true;
+      });
     }
     setTimeout(() => {
       if (this.gameOver) return;
@@ -2349,7 +2370,7 @@ const Battle = {
 
   _executeEnemyAttacks() {
     if (this.gameOver) return;
-    const attackerIdx = this.enemyField.findIndex(c => !c.hasAttacked && !c.justPlayed);
+    const attackerIdx = this.enemyField.findIndex(c => !c.hasAttacked && !c.justPlayed && !c.defenseMode);
     if (attackerIdx < 0) { this._finishEnemyTurn(); return; }
     const attacker = this.enemyField[attackerIdx];
     attacker.hasAttacked = true;
@@ -2426,13 +2447,19 @@ const Battle = {
   _smartEnemyTarget(attacker) {
     let bestIdx = 0, bestScore = -Infinity;
     this.playerField.forEach((target, i) => {
-      const newTDef = target.def - attacker.atk, newADef = attacker.def - target.atk;
-      const destroys = newTDef <= 0, survives = newADef > 0;
       let score = 0;
-      if (destroys && survives) score = 100 + (-newTDef) + target.atk;
-      else if (destroys && !survives) score = 50 + target.atk;
-      else if (!destroys && survives) score = 15 + target.atk * 2;
-      else score = -10 + target.atk * 3;
+      if (target.defenseMode) {
+        // vs defense: ATK vs DEF, no LP damage, no counter
+        const destroys = attacker.atk > target.def;
+        score = destroys ? 40 + attacker.atk : -20; // less attractive
+      } else {
+        const newTDef = target.def - attacker.atk, newADef = attacker.def - target.atk;
+        const destroys = newTDef <= 0, survives = newADef > 0;
+        if (destroys && survives) score = 100 + (-newTDef) + target.atk;
+        else if (destroys && !survives) score = 50 + target.atk;
+        else if (!destroys && survives) score = 15 + target.atk * 2;
+        else score = -10 + target.atk * 3;
+      }
       if (score > bestScore) { bestScore = score; bestIdx = i; }
     });
     return bestIdx;
@@ -2549,6 +2576,73 @@ const Battle = {
     this._cancelBattleDetail();
     UI.closeCardDetail();
     if (idx >= 0) this._selectAttacker(idx);
+  },
+
+  _applyOnPlayAbility(card) {
+    if (!card.ability) return false;
+    const ab = card.ability;
+    // Instant heals / draws
+    if (ab.includes('Heilstrom')) {
+      this.playerHp = Math.min(this.playerMaxHp, this.playerHp + 3);
+      this._log(`${card.name}: Heilstrom – +3 LP!`);
+    }
+    if (ab.includes('Seelenraub')) {
+      this._drawCard('player');
+      this._log(`${card.name}: Seelenraub – 1 Karte gezogen!`);
+    }
+    if (ab.includes('Sternenmagie')) {
+      this._drawCard('player'); this._drawCard('player');
+      this._log(`${card.name}: Sternenmagie – 2 Karten gezogen!`);
+    }
+    if (ab.includes('Seelensauger')) {
+      card.lifelink = true;
+    }
+    // Abilities that need a target: Feuerbombe (3 dmg), Feuerpfeil (2 dmg), Heilige Vernichtung (destroy)
+    const targetMap = [
+      { key: 'Feuerbombe', damage: 3, type: 'damage' },
+      { key: 'Feuerpfeil', damage: 2, type: 'damage' },
+      { key: 'Heilige Vernichtung', damage: 0, type: 'destroy' },
+    ];
+    for (const t of targetMap) {
+      if (ab.includes(t.key)) {
+        if (this.enemyField.length > 0) {
+          this.abilityTargetMode = { ...t, card };
+          this._log(`${card.name}: Wähle ein Ziel für ${t.key}!`);
+          return true; // caller must NOT render/checkWin yet
+        } else {
+          if (t.type === 'damage') {
+            this.enemyHp = Math.max(0, this.enemyHp - t.damage);
+            this._log(`${card.name}: ${t.key} trifft ${this.enemy.name} für ${t.damage} Schaden!`);
+          }
+        }
+      }
+    }
+    return false;
+  },
+
+  _resolveAbilityTarget(enemyIdx) {
+    const mode = this.abilityTargetMode;
+    if (!mode) return;
+    this.abilityTargetMode = null;
+    const target = this.enemyField[enemyIdx];
+    if (!target) { this._render(); return; }
+    if (mode.type === 'damage') {
+      const newDef = target.def - mode.damage;
+      if (newDef <= 0) {
+        const excess = -newDef;
+        if (excess > 0) { this.enemyHp = Math.max(0, this.enemyHp - excess); }
+        this._log(`${mode.card.name}: ${target.name} zerstört! ${excess > 0 ? `+${excess} Schaden an ${this.enemy.name}` : ''}`);
+        this.enemyField.splice(enemyIdx, 1); this.enemyGraveyard.push(target.id);
+      } else {
+        target.def = newDef;
+        this._log(`${mode.card.name}: ${target.name} erleidet ${mode.damage} Schaden. DEF → ${newDef}`);
+      }
+    } else if (mode.type === 'destroy') {
+      this._log(`${mode.card.name}: ${target.name} wird sofort vernichtet!`);
+      this.enemyField.splice(enemyIdx, 1); this.enemyGraveyard.push(target.id);
+    }
+    this._render();
+    this._checkWin();
   },
 
   _showBco(type, idx) {
