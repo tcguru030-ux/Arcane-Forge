@@ -1079,7 +1079,7 @@ const Game = {
           Game.addCard(picked.id);
           State.deck.push(picked.id);
           Game.save();
-          Shop._showChestAnim({ name: 'Willkommens-Truhe', emoji: '🔵' }, cards, _showLabTutorial);
+          Shop._showChestAnim({ name: 'Willkommens-Truhe', imgFile: 'seltenetruhe.png' }, cards, _showLabTutorial);
         }
       );
     }, 400);
@@ -2129,10 +2129,10 @@ const Shop = {
 
   openChest(type) {
     const defs = {
-      truhe:        { cost: 100, name: 'Truhe',            emoji: '📦' },
-      selteneTruhe: { cost: 200, name: 'Seltene Truhe',    emoji: '🔵' },
-      epischeTruhe: { cost: 300, name: 'Epische Truhe',    emoji: '🟣' },
-      mythTruhe:    { cost: 500, name: 'Truhe der Mythen', emoji: '🔮' },
+      truhe:        { cost: 100, name: 'Truhe',            imgFile: 'truhe.png' },
+      selteneTruhe: { cost: 200, name: 'Seltene Truhe',    imgFile: 'seltenetruhe.png' },
+      epischeTruhe: { cost: 300, name: 'Epische Truhe',    imgFile: 'epischetruhe.png' },
+      mythTruhe:    { cost: 500, name: 'Truhe der Mythen', imgFile: 'truhedermythen.png' },
     };
     const def = defs[type];
     if (!def) return;
@@ -2147,13 +2147,7 @@ const Shop = {
     const el = document.getElementById('shop-gold');
     if (el) el.textContent = '💰' + State.player.gold;
     Game.save();
-    const cardList = cards.map(id => {
-      const c = getCard(id);
-      return c ? `${c.emoji} <b>${c.name}</b> <span style="color:${rarityColor(c.rarity)}">(${(RARITY[c.rarity]||RARITY.common).label})</span>` : id;
-    }).join('<br>');
-    Game.showModal(def.emoji, def.name + ' geöffnet!',
-      `Du erhältst:<br><br>${cardList}`,
-      'Super!', null, () => {});
+    this._showChestAnim(def, cards, () => {});
   },
 
   showPreview(type) {
@@ -2179,6 +2173,49 @@ const Shop = {
       grid.appendChild(div);
     });
     document.getElementById('overlay-cardpick').classList.add('visible');
+  },
+
+  _chestImgUrl(imgFile) {
+    return `${CARD_IMG_BASE}/${imgFile}`;
+  },
+
+  _showChestAnim(def, cards, onClose) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.93);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:300;gap:20px;';
+    const chestVisual = def.imgFile
+      ? `<img src="${this._chestImgUrl(def.imgFile)}" style="width:110px;height:110px;object-fit:contain;animation:comboBurst 0.6s cubic-bezier(0.175,0.885,0.32,1.275);">`
+      : `<span style="font-size:80px;animation:comboBurst 0.6s cubic-bezier(0.175,0.885,0.32,1.275);">${def.emoji||'📦'}</span>`;
+    const phase1 = document.createElement('div');
+    phase1.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:14px;cursor:pointer;';
+    phase1.innerHTML = `${chestVisual}<div style="font-size:18px;font-weight:800;color:var(--accent)">${def.name}</div><div style="font-size:12px;color:var(--text3);animation:pulse 1s infinite">Tippe zum Öffnen</div>`;
+    const phase2 = document.createElement('div');
+    phase2.style.cssText = 'display:none;flex-direction:column;align-items:center;gap:16px;width:100%;padding:0 24px;box-sizing:border-box;';
+    const titleEl = document.createElement('div');
+    titleEl.style.cssText = 'font-size:18px;font-weight:800;color:var(--accent)';
+    titleEl.textContent = def.name + ' geöffnet!';
+    const resultsEl = document.createElement('div');
+    resultsEl.style.cssText = 'display:flex;gap:14px;flex-wrap:wrap;justify-content:center;';
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = 'Weiter';
+    closeBtn.style.cssText = 'padding:12px 32px;border-radius:10px;border:1px solid var(--accent);background:rgba(200,166,74,0.18);color:var(--accent);font-size:15px;font-family:var(--font);cursor:pointer;font-weight:700;margin-top:8px;';
+    phase2.append(titleEl, resultsEl, closeBtn);
+    overlay.append(phase1, phase2);
+    document.getElementById('app').appendChild(overlay);
+    const open = () => {
+      phase1.style.display = 'none';
+      phase2.style.display = 'flex';
+      cards.forEach((id, i) => setTimeout(() => {
+        const c = getCard(id);
+        if (!c) return;
+        const d = document.createElement('div');
+        d.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;animation:slideUp 0.35s ease;';
+        d.innerHTML = `${cardArt(id, c.emoji, 72)}<div style="font-size:12px;font-weight:700;color:var(--text);text-align:center;max-width:80px">${c.name}</div><div style="font-size:10px;color:${rarityColor(c.rarity)};font-weight:700">${(RARITY[c.rarity]||RARITY.common).label}</div>`;
+        resultsEl.appendChild(d);
+      }, i * 280));
+      closeBtn.onclick = () => { overlay.remove(); if (onClose) onClose(); };
+    };
+    const timer = setTimeout(open, 1500);
+    phase1.onclick = () => { clearTimeout(timer); open(); };
   },
 
   _rollCards(type) {
@@ -2299,7 +2336,7 @@ const Auth = {
           Game.addCard(picked.id);
           State.deck.push(picked.id);
           Game.saveToCloud();
-          Shop._showChestAnim({ name: 'Willkommens-Truhe', emoji: '🔵' }, cards, _showLabTutorialReg);
+          Shop._showChestAnim({ name: 'Willkommens-Truhe', imgFile: 'seltenetruhe.png' }, cards, _showLabTutorialReg);
         });
     }, 400);
   },
