@@ -1104,6 +1104,12 @@ const Game = {
     State.collection = { feuer:3, wasser:3, eis:2, ritter:2, gnom:2, troll:1, licht:1, schatten:1, elfe:1, flug:1 };
     const rarePool = COMBO_RECIPES.filter(r => r.rarity === 'rare').sort(() => Math.random() - 0.5);
     State.discoveredCombos = rarePool.slice(0, 2).map(r => r.id);
+    // Ensure one of the two starter combos is immediately playable
+    const starterCombo = rarePool[Math.floor(Math.random() * 2)];
+    [starterCombo.card1, starterCombo.card2].forEach(id => {
+      if (!State.collection[id]) State.collection[id] = 1;
+      if (!State.deck.includes(id)) State.deck.push(id);
+    });
     State.researchQueue = [];
     State.defeatedEnemies = [];
     this.save();
