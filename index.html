@@ -1056,8 +1056,8 @@ const Game = {
     State.player.hp = 100; State.player.maxHp = 100;
     State.player.level = 1; State.player.xp = 0; State.player.xpNext = 100;
     State.player.gold = 0; State.player.wins = 0;
-    State.deck = ['feuer','wasser','feuer','wasser','eis','ritter','troll','gnom','licht','schatten'];
-    State.collection = { feuer:3, wasser:3, eis:2, ritter:2, gnom:2, troll:1, licht:1, schatten:1, elfe:1, flug:1 };
+    State.deck = ['feuer','feuer','feuer','ritter','ritter','wasser','wasser','wasser','eis','eis','gnom','gnom','flug','flug'];
+    State.collection = { feuer:3, ritter:2, wasser:3, eis:2, gnom:2, flug:2 };
     const rarePool = COMBO_RECIPES.filter(r => r.rarity === 'rare').sort(() => Math.random() - 0.5);
     State.discoveredCombos = rarePool.slice(0, 2).map(r => r.id);
     State.researchQueue = [];
@@ -1080,14 +1080,14 @@ const Game = {
       Game.showModal(
         '🎁',
         'Willkommen, ' + name + '!',
-        `<div style="text-align:center;line-height:2">Danke, dass du <b>Arcane Forge</b> spielst!<br>Als Dankeschön erhältst du eine kostenlose<br><span style="font-size:22px">🔵</span><br><b style="color:var(--rare)">Willkommens-Truhe</b><br><span style="font-size:11px;color:var(--text3)">2× Gewöhnlich + 1× Selten garantiert</span></div>`,
+        `<div style="text-align:center;line-height:2">Danke, dass du <b>Arcane Forge</b> spielst!<br>Als Dankeschön erhältst du eine kostenlose<br><span style="font-size:22px">🔵</span><br><b style="color:var(--rare)">Willkommens-Truhe</b><br><span style="font-size:11px;color:var(--text3)">1× Seltene Karte garantiert</span></div>`,
         '🔵 Truhe öffnen!', null,
         () => {
-          const commons = BASE_CARDS.filter(c => c.rarity === 'common');
-          const rares   = BASE_CARDS.filter(c => c.rarity === 'rare');
-          const rand = arr => arr[Math.floor(Math.random() * arr.length)];
-          const cards = [rand(commons).id, rand(commons).id, rand(rares).id];
-          cards.forEach(id => Game.addCard(id));
+          const rares = BASE_CARDS.filter(c => c.rarity === 'rare');
+          const picked = rares[Math.floor(Math.random() * rares.length)];
+          const cards = [picked.id];
+          Game.addCard(picked.id);
+          State.deck.push(picked.id);
           Game.save();
           Shop._showChestAnim({ name: 'Willkommens-Truhe', emoji: '🔵' }, cards, _showLabTutorial);
         }
@@ -2255,8 +2255,8 @@ const Auth = {
     State.player.hp = 100; State.player.maxHp = 100;
     State.player.level = 1; State.player.xp = 0; State.player.xpNext = 100;
     State.player.gold = 0; State.player.wins = 0;
-    State.deck = ['feuer','wasser','feuer','wasser','eis','ritter','troll','gnom','licht','schatten'];
-    State.collection = { feuer:3, wasser:3, eis:2, ritter:2, gnom:2, troll:1, licht:1, schatten:1, elfe:1, flug:1 };
+    State.deck = ['feuer','feuer','feuer','ritter','ritter','wasser','wasser','wasser','eis','eis','gnom','gnom','flug','flug'];
+    State.collection = { feuer:3, ritter:2, wasser:3, eis:2, gnom:2, flug:2 };
     const rarePool2 = COMBO_RECIPES.filter(r => r.rarity === 'rare').sort(() => Math.random() - 0.5);
     State.discoveredCombos = rarePool2.slice(0, 2).map(r => r.id);
     State.researchQueue = [];
@@ -2269,9 +2269,25 @@ const Auth = {
     UI.updateHud();
     const rc1 = COMBO_RECIPES.find(r => r.id === State.discoveredCombos[0]);
     const rc2 = COMBO_RECIPES.find(r => r.id === State.discoveredCombos[1]);
-    setTimeout(() => Game.showModal('⚗', 'Willkommen im Labor, ' + name + '!',
-      `Du startest mit 2 bekannten Kombinationen:\n${rc1?rc1.emoji+' <b>'+rc1.name+'</b>':''}\n${rc2?rc2.emoji+' <b>'+rc2.name+'</b>':''}\n\n<b>So funktioniert das Labor:</b>\nErforsche neue Kombinationen – du brauchst beide Basiskarten in deiner Sammlung. Im Kampf kannst du 2 passende Basiskarten auf dem Feld zu einer mächtigen Endform kombinieren.\n\n<b>Seltenheiten &amp; Forschungszeiten:</b>\n<span style="color:var(--rare)">● Selten</span> – 30 Min &nbsp;&nbsp; <span style="color:var(--epic)">● Episch</span> – 60 Min\n<span style="color:var(--legendary)">● Legendär</span> – 4 Std &nbsp;&nbsp; <span style="color:var(--mythic)">● Mythisch</span> – 4 Std\n\nStarte eine Erforschung und begib dich dann ins Abenteuer!`,
-      'Los gehts!', null, () => {}), 500);
+    const _showLabTutorialReg = () => {
+      Game.showModal('⚗', 'Willkommen im Labor, ' + name + '!',
+        `Du startest mit 2 bekannten Kombinationen:\n${rc1?rc1.emoji+' <b>'+rc1.name+'</b>':''}\n${rc2?rc2.emoji+' <b>'+rc2.name+'</b>':''}\n\n<b>So funktioniert das Labor:</b>\nErforsche neue Kombinationen – du brauchst beide Basiskarten in deiner Sammlung. Im Kampf kannst du 2 passende Basiskarten auf dem Feld zu einer mächtigen Endform kombinieren.\n\n<b>Seltenheiten &amp; Forschungszeiten:</b>\n<span style="color:var(--rare)">● Selten</span> – 30 Min &nbsp;&nbsp; <span style="color:var(--epic)">● Episch</span> – 60 Min\n<span style="color:var(--legendary)">● Legendär</span> – 4 Std &nbsp;&nbsp; <span style="color:var(--mythic)">● Mythisch</span> – 4 Std\n\nStarte eine Erforschung und begib dich dann ins Abenteuer!`,
+        'Los gehts!', null, () => {});
+    };
+    setTimeout(() => {
+      Game.showModal('🎁', 'Willkommen, ' + name + '!',
+        `<div style="text-align:center;line-height:2">Danke, dass du <b>Arcane Forge</b> spielst!<br>Als Dankeschön erhältst du eine kostenlose<br><span style="font-size:22px">🔵</span><br><b style="color:var(--rare)">Willkommens-Truhe</b><br><span style="font-size:11px;color:var(--text3)">1× Seltene Karte garantiert</span></div>`,
+        '🔵 Truhe öffnen!', null,
+        () => {
+          const rares = BASE_CARDS.filter(c => c.rarity === 'rare');
+          const picked = rares[Math.floor(Math.random() * rares.length)];
+          const cards = [picked.id];
+          Game.addCard(picked.id);
+          State.deck.push(picked.id);
+          Game.saveToCloud();
+          Shop._showChestAnim({ name: 'Willkommens-Truhe', emoji: '🔵' }, cards, _showLabTutorialReg);
+        });
+    }, 400);
   },
 
   async logout() {
