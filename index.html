@@ -400,6 +400,19 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 .animate-pulse { animation: pulse 0.5s ease; }
 .animate-shake { animation: shake 0.3s ease; }
 .animate-combo { animation: comboBurst 0.5s cubic-bezier(0.175,0.885,0.32,1.275); }
+/* ---- CHEST ANIMATION ---- */
+@keyframes chestFloat { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-12px) scale(1.05)} }
+@keyframes chestPop { 0%{transform:scale(1) rotate(0)} 20%{transform:scale(1.3) rotate(-8deg)} 40%{transform:scale(1.35) rotate(8deg)} 60%{transform:scale(1.25) rotate(-5deg)} 80%{transform:scale(1.3) rotate(3deg)} 100%{transform:scale(0) rotate(0)} }
+@keyframes cardReveal { from{opacity:0;transform:translateY(50px) scale(0.7)} to{opacity:1;transform:translateY(0) scale(1)} }
+@keyframes glowPulse { 0%,100%{box-shadow:0 0 10px currentColor} 50%{box-shadow:0 0 24px currentColor, 0 0 40px currentColor} }
+#chest-anim-overlay { display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:2000;background:rgba(0,0,0,0.97);flex-direction:column;align-items:center;justify-content:center;gap:18px; }
+#chest-anim-overlay.active { display:flex; }
+.chest-anim-icon { font-size:90px;line-height:1;cursor:default;user-select:none; }
+.chest-float { animation:chestFloat 1.4s ease-in-out infinite; }
+.chest-pop { animation:chestPop 0.7s cubic-bezier(0.36,0.07,0.19,0.97) forwards; }
+.chest-result-card { animation:cardReveal 0.45s cubic-bezier(0.175,0.885,0.32,1.275) both; }
+.chest-result-card-inner { border-radius:12px;overflow:hidden;text-align:center;border:2px solid;transition:transform 0.2s; }
+.chest-result-card-inner:hover { transform:scale(1.05); }
 
 /* ---- NAV BAR ---- */
 .navbar { display: flex; border-top: 1px solid var(--border2); background: var(--bg2); flex-shrink: 0; }
@@ -1117,11 +1130,7 @@ const Game = {
           const cards = Shop._rollCards('truhe');
           cards.forEach(id => Game.addCard(id));
           Game.save();
-          const cardList = cards.map(id => { const c = getCard(id); return c ? `${c.emoji} <b>${c.name}</b> <span style="color:${rarityColor(c.rarity)}">(${(RARITY[c.rarity]||RARITY.common).label})</span>` : id; }).join('<br>');
-          Game.showModal('📦', 'Truhe geöffnet!',
-            `Du erhältst:<br><br>${cardList}<br><br><span style="font-size:11px;color:var(--text3)">Viel Spaß beim Spielen!</span>`,
-            'Weiter ›', null, _showLabTutorial
-          );
+          Shop._showChestAnim({ name: 'Willkommens-Truhe', emoji: '📦' }, cards, _showLabTutorial);
         }
       );
     }, 400);
@@ -2449,13 +2458,66 @@ const Shop = {
     const el = document.getElementById('shop-gold');
     if (el) el.textContent = '💰' + State.player.gold;
     Game.save();
-    const cardList = cards.map(id => {
+    this._showChestAnim(def, cards, () => { this.render(); });
+  },
+
+  _showChestAnim(def, cards, onClose) {
+    const overlay  = document.getElementById('chest-anim-overlay');
+    const iconEl   = document.getElementById('chest-anim-icon');
+    const labelEl  = document.getElementById('chest-anim-label');
+    const phase1   = document.getElementById('chest-anim-phase1');
+    const phase2   = document.getElementById('chest-anim-phase2');
+    const titleEl  = document.getElementById('chest-anim-title');
+    const resultsEl= document.getElementById('chest-result-cards');
+    const closeBtn = document.getElementById('chest-anim-close-btn');
+    if (!overlay) { onClose && onClose(); return; }
+
+    // Reset
+    iconEl.textContent = def.emoji;
+    iconEl.className = 'chest-anim-icon chest-float';
+    labelEl.textContent = 'Wird geöffnet…';
+    phase1.style.display = 'flex';
+    phase2.style.display = 'none';
+    resultsEl.innerHTML = '';
+    overlay.classList.add('active');
+
+    // Click on chest to trigger pop early, or auto-pop after 1.4s
+    const doPop = () => {
+      iconEl.className = 'chest-anim-icon chest-pop';
+      iconEl.onclick = null;
+      labelEl.textContent = '';
+      setTimeout(() => this._showChestResults(def, cards, phase1, phase2, titleEl, resultsEl, closeBtn, onClose), 650);
+    };
+    iconEl.onclick = doPop;
+    setTimeout(doPop, 1400);
+  },
+
+  _showChestResults(def, cards, phase1, phase2, titleEl, resultsEl, closeBtn, onClose) {
+    phase1.style.display = 'none';
+    phase2.style.display = 'flex';
+    titleEl.textContent = def.name + ' geöffnet!';
+    cards.forEach((id, i) => {
       const c = getCard(id);
-      return c ? `${c.emoji} <b>${c.name}</b> <span style="color:${rarityColor(c.rarity)}">(${(RARITY[c.rarity]||RARITY.common).label})</span>` : id;
-    }).join('<br>');
-    Game.showModal(def.emoji, def.name + ' geöffnet!',
-      `Du erhältst:<br><br>${cardList}`,
-      'Super!', null, () => {});
+      if (!c) return;
+      const col = rarityColor(c.rarity);
+      const div = document.createElement('div');
+      div.className = 'chest-result-card';
+      div.style.animationDelay = (i * 0.25) + 's';
+      div.style.color = col;
+      div.innerHTML = `<div class="chest-result-card-inner" style="border-color:${col};box-shadow:0 0 12px ${col}55;width:100px">
+        <img src="${cardImgUrl(id)}" style="width:100%;aspect-ratio:2/3;object-fit:contain;background:#0a0a0a;display:block" onerror="this.style.display='none'">
+        <div style="padding:5px 3px;background:var(--bg2)">
+          <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:1px">${c.name}</div>
+          <div style="font-size:10px;color:${col};font-weight:700">${(RARITY[c.rarity]||RARITY.common).label}</div>
+          <div style="font-size:10px;color:var(--text2)">⚔${c.atk} 🛡${c.def}</div>
+        </div>
+      </div>`;
+      resultsEl.appendChild(div);
+    });
+    closeBtn.onclick = () => {
+      document.getElementById('chest-anim-overlay').classList.remove('active');
+      onClose && onClose();
+    };
   },
 
   _rollCards(type) {
@@ -2609,5 +2671,19 @@ const Auth = {
   }, 120000);
 })();
 </script>
+
+<!-- Chest Opening Animation Overlay -->
+<div id="chest-anim-overlay">
+  <div id="chest-anim-phase1" style="display:flex;flex-direction:column;align-items:center;gap:16px">
+    <div class="chest-anim-icon chest-float" id="chest-anim-icon">📦</div>
+    <div style="font-size:15px;color:var(--text2);font-weight:600" id="chest-anim-label">Wird geöffnet…</div>
+    <div style="font-size:12px;color:var(--text3)">Tippe auf die Truhe</div>
+  </div>
+  <div id="chest-anim-phase2" style="display:none;flex-direction:column;align-items:center;gap:16px;width:100%;padding:0 16px;box-sizing:border-box">
+    <div style="font-size:20px;font-weight:800;color:var(--accent)" id="chest-anim-title">Du erhältst!</div>
+    <div id="chest-result-cards" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap"></div>
+    <button id="chest-anim-close-btn" style="margin-top:8px;padding:13px 36px;border-radius:12px;border:1px solid var(--accent);background:rgba(200,166,74,0.2);color:var(--accent);font-size:16px;font-weight:800;cursor:pointer;font-family:var(--font)">Super! ✨</button>
+  </div>
+</div>
 </body>
 </html>
