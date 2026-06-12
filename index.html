@@ -1548,6 +1548,7 @@ const Battle = {
   playerDeck: [], enemyDeck: [],
   playerHand: [], enemyHand: [],
   playerField: [], enemyField: [],
+  playerGraveyard: [], enemyGraveyard: [],
   turn: 1, phase: 'player',
   selectedHandIdx: -1,
   combo1Idx: -1, combo2Idx: -1, combo3Idx: -1,
@@ -1574,6 +1575,7 @@ const Battle = {
     this.enemyDeck = shuffle([...enemy.deck, ...enemy.deck]);
     this.playerHand = []; this.enemyHand = [];
     this.playerField = []; this.enemyField = [];
+    this.playerGraveyard = []; this.enemyGraveyard = [];
     this.turn = 1; this.phase = 'player';
     this.selectedHandIdx = -1; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1;
     this.comboMode = false; this.attackMode = false;
@@ -1590,8 +1592,17 @@ const Battle = {
 
   _drawCard(who) {
     if (who === 'player') {
+      if (this.playerDeck.length === 0 && this.playerGraveyard.length > 0) {
+        this.playerDeck = shuffle([...this.playerGraveyard]);
+        this.playerGraveyard = [];
+        this._log('🔄 Deck leer – Friedhof wird neu gemischt!');
+      }
       if (this.playerDeck.length > 0) this.playerHand.push(this.playerDeck.pop());
     } else {
+      if (this.enemyDeck.length === 0 && this.enemyGraveyard.length > 0) {
+        this.enemyDeck = shuffle([...this.enemyGraveyard]);
+        this.enemyGraveyard = [];
+      }
       if (this.enemyDeck.length > 0) this.enemyHand.push(this.enemyDeck.pop());
     }
   },
@@ -1602,7 +1613,7 @@ const Battle = {
     document.getElementById('battle-phase').textContent = isPlayer ? 'DEIN ZUG' : 'GEGNER';
     const noAtkBadge = document.getElementById('no-atk-badge');
     if (noAtkBadge) noAtkBadge.style.display = (isPlayer && this.turn === 1) ? '' : 'none';
-    document.getElementById('battle-cards-left').textContent = `Deck: ${this.playerDeck.length}`;
+    document.getElementById('battle-cards-left').textContent = `Deck: ${this.playerDeck.length}  ☠ ${this.playerGraveyard.length}`;
     const manaBar = document.getElementById('mana-bar');
     if (manaBar) {
       let orbs = '';
@@ -1839,9 +1850,9 @@ const Battle = {
     // Mana = sum of ingredient costs
     const comboCost = (c1.cost||1) + (c2.cost||1) + (c3 ? (c3.cost||1) : 0);
     if (this.playerMana < comboCost) { this._log(`❌ Nicht genug Mana! Benötigt: 💎${comboCost}, vorhanden: 💎${this.playerMana}`); this._render(); return; }
-    // Remove cards (highest index first)
+    // Remove cards (highest index first) → graveyard
     const idxs = id3 ? [idx1, idx2, idx3] : [idx1, idx2];
-    idxs.sort((a,b) => b - a).forEach(i => this.playerHand.splice(i, 1));
+    idxs.sort((a,b) => b - a).forEach(i => { this.playerGraveyard.push(this.playerHand.splice(i, 1)[0]); });
     this.playerMana -= comboCost;
     const resultCard = getCard(recipe.id);
     const result = { ...recipe, ...resultCard, id: recipe.id, isEndform: true, hasAttacked: false, justPlayed: true, shieldActive: resultCard?.shield ? true : false };
@@ -1926,8 +1937,8 @@ const Battle = {
       else { attacker.def = newAttackerDef; msgs.push(`${attacker.emoji} DEF→${newAttackerDef}`); }
     }
 
-    if (tDead) this.enemyField.splice(enemyIdx, 1);
-    if (aDead) this.playerField.splice(attackerIdx, 1);
+    if (tDead) { this.enemyField.splice(enemyIdx, 1); this.enemyGraveyard.push(target.id); }
+    if (aDead) { this.playerField.splice(attackerIdx, 1); this.playerGraveyard.push(attacker.id); }
     this._log(msgs.join(' ')); this._render();
     if (!this._checkWin()) this._checkLoss();
   },
@@ -1952,7 +1963,6 @@ const Battle = {
     this.attackMode = false; this.selectedAttackerIdx = -1;
     this.comboMode = false; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1; this.selectedHandIdx = -1;
     this.phase = 'enemy';
-    this._drawCard('player');
     this._log('Dein Zug endet. Gegner ist dran...');
     this._render();
     setTimeout(() => this._enemyTurn(), 900);
@@ -2037,8 +2047,8 @@ const Battle = {
       else { attacker.def = newADef; msgs.push(`${attacker.emoji} DEF→${newADef}`); }
     }
 
-    if (tDead) this.playerField.splice(targetIdx, 1);
-    if (aDead) this.enemyField.splice(attackerIdx, 1);
+    if (tDead) { this.playerField.splice(targetIdx, 1); this.playerGraveyard.push(target.id); }
+    if (aDead) { this.enemyField.splice(attackerIdx, 1); this.enemyGraveyard.push(attacker.id); }
     this._log(msgs.join(' ')); this._render();
     if (this._checkLoss() || this._checkWin()) return;
     setTimeout(() => this._executeEnemyAttacks(), 650);
@@ -2066,6 +2076,7 @@ const Battle = {
     this.playerField.forEach(c => { c.hasAttacked = false; c.justPlayed = false; });
     this.playerMaxMana = Math.min(this.turn, 8);
     this.playerMana = this.playerMaxMana;
+    this._drawCard('player');
     this._render();
     if (!this._checkLoss()) this._log(`Zug ${this.turn} – dein Zug! 💎${this.playerMana} Mana`);
   },
