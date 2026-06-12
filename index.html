@@ -360,6 +360,22 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 .chest-desc { font-size: 12px; color: var(--text2); margin-top: 3px; line-height: 1.4; }
 .chest-price { font-size: 15px; color: var(--accent); font-weight: 800; margin-top: 5px; }
 .chest-pool { margin-top: 6px; line-height: 1.6; }
+.abil-dot { background: rgba(100,255,100,0.15); color: #7fff7f; border: 1px solid rgba(100,255,100,0.4); }
+.abil-dot.burn { background: rgba(255,120,0,0.15); color: #ff9040; border: 1px solid rgba(255,120,0,0.4); }
+.lab-badge { position:absolute;top:3px;right:3px;width:9px;height:9px;background:var(--red);border-radius:50%;display:none;border:1px solid #000; }
+.hand-field-hint { box-shadow: 0 0 0 2px #a78bfa, 0 0 8px #a78bfa66 !important; }
+/* Mulligan Overlay */
+#mulligan-overlay { display:none;position:absolute;top:0;left:0;right:0;bottom:0;z-index:200;background:rgba(0,0,0,0.92);flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px; }
+#mulligan-overlay.active { display:flex; }
+.mulligan-title { font-size:18px;font-weight:800;color:var(--text); }
+.mulligan-sub { font-size:12px;color:var(--text3);text-align:center; }
+#mulligan-hand { display:flex;gap:8px;flex-wrap:wrap;justify-content:center; }
+.mulligan-card { width:72px;border-radius:8px;border:2px solid var(--border2);background:var(--bg2);cursor:pointer;overflow:hidden;position:relative; }
+.mulligan-card.selected { border-color:var(--red);box-shadow:0 0 8px var(--red)60; }
+.mulligan-card.selected::after { content:'✖';position:absolute;top:2px;right:4px;font-size:12px;color:var(--red);font-weight:900; }
+.mulligan-card img { width:100%;aspect-ratio:2/3;object-fit:contain;background:#0a0a0a; }
+.mulligan-card-name { font-size:9px;color:var(--text2);padding:2px 3px;text-align:center;line-height:1.3; }
+.mulligan-btn { padding:12px 30px;border-radius:10px;border:1px solid var(--accent);background:rgba(200,166,74,0.2);color:var(--accent);font-size:15px;font-weight:800;cursor:pointer;font-family:var(--font); }
 .rarity-req-badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 20px; margin-top: 4px; font-weight: 700; }
 .rarity-req-common { background: rgba(136,136,136,0.2); color: var(--common); }
 .rarity-req-rare { background: rgba(59,130,246,0.2); color: var(--rare); }
@@ -507,8 +523,9 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
     <button class="nav-btn" onclick="showScreen('screen-shop');Shop.render()">
       <span class="nav-btn-icon">🛒</span>Shop
     </button>
-    <button class="nav-btn" onclick="showScreen('screen-combo');UI.renderCombo()">
+    <button class="nav-btn" style="position:relative" onclick="showScreen('screen-combo');UI.renderCombo()">
       <span class="nav-btn-icon">⚗</span>Labor
+      <span id="lab-badge" class="lab-badge"></span>
     </button>
     <button class="nav-btn" onclick="showScreen('screen-settings')">
       <span class="nav-btn-icon">⚙</span>Optionen
@@ -563,6 +580,14 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
     <button class="battle-btn" id="btn-play" onclick="Battle.playCard()">▶ Spielen</button>
     <button class="battle-btn btn-combo" id="btn-combo" onclick="Battle.startCombo()">⚗ Kombi</button>
     <button class="battle-btn btn-end" id="btn-endturn" onclick="Battle.endTurn()">Zug enden ›</button>
+  </div>
+  <!-- Mulligan Overlay -->
+  <div id="mulligan-overlay">
+    <div class="mulligan-title">🃏 Mulligan</div>
+    <div class="mulligan-sub">Tippe bis zu 2 Karten an, um sie zurückzulegen und neu zu ziehen.</div>
+    <div id="mulligan-hand"></div>
+    <div style="font-size:11px;color:var(--text3)" id="mulligan-count">0 / 2 gewählt</div>
+    <button class="mulligan-btn" onclick="Battle._confirmMulligan()">Weiter ›</button>
   </div>
 </div>
 
@@ -829,44 +854,44 @@ const COMBO_RECIPES = [
 const REGIONS = [
   { id:'anfaenger', name:'Anfängergebiet', emoji:'🌾', desc:'Sanfte Hügel und einfache Feinde.', minLevel:1, bg:'#1a2a10',
     enemies:[
-      { id:'goblin', name:'Waldgoblin', emoji:'👺', hp:20, deck:['feuer','wasser','gnom','gnom'], reward:{ xp:30, gold:10, cards:['wasser','gnom'] }, type:'normal', diff:1 },
-      { id:'kobold', name:'Koboldschurke', emoji:'🧌', hp:25, deck:['eis','feuer','troll','ritter'], reward:{ xp:50, gold:15, cards:['feuer','ritter'] }, type:'normal', diff:2 },
-      { id:'waldtroll', name:'Waldtroll', emoji:'👹', hp:35, deck:['troll','troll','feuer','wasser','ritter','eisRitter'], reward:{ xp:80, gold:25, cards:['troll','eisRitter'] }, type:'elite', diff:3 },
+      { id:'goblin', name:'Waldgoblin', emoji:'👺', hp:20, deck:['feuer','wasser','gnom','kobold','eis','wind'], reward:{ xp:30, gold:10, cards:['wasser','gnom'] }, type:'normal', diff:1 },
+      { id:'kobold', name:'Koboldschurke', emoji:'🧌', hp:25, deck:['eis','feuer','troll','ritter','erde','wind','blitz','kobold'], reward:{ xp:50, gold:15, cards:['feuer','ritter'] }, type:'normal', diff:2 },
+      { id:'waldtroll', name:'Waldtroll', emoji:'👹', hp:35, deck:['troll','feuer','wasser','ritter','erde','kobold','eisRitter','steinKobold'], reward:{ xp:80, gold:25, cards:['troll','eisRitter'] }, type:'elite', diff:3 },
     ]
   },
   { id:'wald', name:'Waldregion', emoji:'🌲', desc:'Dunkle Wälder voller alter Geheimnisse.', minLevel:3, bg:'#0d2010',
     enemies:[
-      { id:'waldelfe', name:'Dunkelelfe', emoji:'🧝', hp:30, deck:['schatten','elfe','elfe','licht','feuer'], reward:{ xp:70, gold:20, cards:['elfe','lichtElfe'] }, type:'normal', diff:2 },
-      { id:'baumgeist', name:'Waldgeist', emoji:'👻', hp:28, deck:['geist','wasser','elfe','geist'], reward:{ xp:60, gold:18, cards:['geist','wasserGeist'] }, type:'normal', diff:2 },
-      { id:'walddrache', name:'Walddrache', emoji:'🐉', hp:45, deck:['drache','feuer','feuer','troll','ritter','schatten','flammenOger','feuerDrache'], reward:{ xp:130, gold:40, cards:['drache','feuerDrache'] }, type:'boss', diff:4 },
+      { id:'waldelfe', name:'Dunkelelfe', emoji:'🧝', hp:30, deck:['schatten','elfe','licht','feuer','flug','schattenFlug','wind'], reward:{ xp:70, gold:20, cards:['elfe','lichtElfe'] }, type:'normal', diff:2 },
+      { id:'baumgeist', name:'Waldgeist', emoji:'👻', hp:28, deck:['geist','wasser','elfe','licht','flugElfe','wasserElfe','kobold'], reward:{ xp:60, gold:18, cards:['geist','wasserGeist'] }, type:'normal', diff:2 },
+      { id:'walddrache', name:'Walddrache', emoji:'🐉', hp:45, deck:['drache','feuer','schatten','troll','ritter','elfe','flammenOger','feuerDrache','schattenFlug','feuerElfe'], reward:{ xp:130, gold:40, cards:['drache','feuerDrache'] }, type:'boss', diff:4 },
     ]
   },
   { id:'eis', name:'Eisregion', emoji:'❄', desc:'Ewiger Frost und schneidende Winde.', minLevel:5, bg:'#0d1a2a',
     enemies:[
-      { id:'eiswolf', name:'Eiswolf', emoji:'🐺', hp:35, deck:['eis','eis','flug','donner','eisGeist'], reward:{ xp:90, gold:28, cards:['eis','sturmAdler'] }, type:'normal', diff:3 },
-      { id:'frosttroll', name:'Frosttroll', emoji:'👹', hp:40, deck:['eis','troll','troll','eis','ritter','eisRitter'], reward:{ xp:110, gold:35, cards:['eisRitter','troll'] }, type:'elite', diff:3 },
-      { id:'eisdrache', name:'Gletscherdrache', emoji:'🐉', hp:60, deck:['drache','eis','eis','eis','donner','wasser','eisDrache','tiefseeDrache'], reward:{ xp:200, gold:65, cards:['eisDrache','donner'] }, type:'boss', diff:5 },
+      { id:'eiswolf', name:'Eiswolf', emoji:'🐺', hp:35, deck:['eis','flug','donner','eisGeist','sturmAdler','blitz','wind'], reward:{ xp:90, gold:28, cards:['eis','sturmAdler'] }, type:'normal', diff:3 },
+      { id:'frosttroll', name:'Frosttroll', emoji:'👹', hp:40, deck:['eis','troll','ritter','eisRitter','erde','steinKobold','wasser','blitz'], reward:{ xp:110, gold:35, cards:['eisRitter','troll'] }, type:'elite', diff:3 },
+      { id:'eisdrache', name:'Gletscherdrache', emoji:'🐉', hp:60, deck:['drache','eis','donner','wasser','eisDrache','tiefseeDrache','sturmAdler','eisRitter','eisGeist','sturmSchwinge'], reward:{ xp:200, gold:65, cards:['eisDrache','donner'] }, type:'boss', diff:5 },
     ]
   },
   { id:'vulkan', name:'Vulkanregion', emoji:'🌋', desc:'Lava und Asche, Heimat der Feuerbestien.', minLevel:8, bg:'#2a0d0d',
     enemies:[
-      { id:'lavadaemon', name:'Lava-Dämon', emoji:'😈', hp:40, deck:['daemon','feuer','feuer','troll','donner','flammenOger'], reward:{ xp:120, gold:38, cards:['daemon','flammenOger'] }, type:'normal', diff:4 },
-      { id:'feuerriese', name:'Feuerriese', emoji:'🔥', hp:55, deck:['feuer','feuer','drache','troll','troll','ritter','flammenOger','feuerElfe'], reward:{ xp:160, gold:50, cards:['feuer','feuerDrache'] }, type:'elite', diff:4 },
-      { id:'vulkanherr', name:'Herr des Vulkans', emoji:'🌋', hp:80, deck:['drache','daemon','feuer','feuer','donner','schatten','lich','feuerDrache','trollDaemon','donnerTroll'], reward:{ xp:300, gold:100, cards:['feuerDrache','schattendaemon'] }, type:'boss', diff:6 },
+      { id:'lavadaemon', name:'Lava-Dämon', emoji:'😈', hp:40, deck:['daemon','feuer','donner','troll','blitz','flammenOger','feuerHexe','vampir'], reward:{ xp:120, gold:38, cards:['daemon','flammenOger'] }, type:'normal', diff:4 },
+      { id:'feuerriese', name:'Feuerriese', emoji:'🔥', hp:55, deck:['feuer','drache','troll','ritter','feuerElfe','flammenOger','feuerDrache','hexe','feuerHexe'], reward:{ xp:160, gold:50, cards:['feuer','feuerDrache'] }, type:'elite', diff:4 },
+      { id:'vulkanherr', name:'Herr des Vulkans', emoji:'🌋', hp:80, deck:['drache','daemon','feuer','donner','schatten','lich','feuerDrache','trollDaemon','feuerElfe','feuerHexe','schattendaemon','donnerTroll'], reward:{ xp:300, gold:100, cards:['feuerDrache','schattendaemon'] }, type:'boss', diff:6 },
     ]
   },
   { id:'schatten', name:'Schattenreich', emoji:'🌑', desc:'Ewige Finsternis, wo Dämonen regieren.', minLevel:12, bg:'#0d0d1a',
     enemies:[
-      { id:'schattenassel', name:'Schattenassassin', emoji:'🗡', hp:45, deck:['schatten','schatten','daemon','flug','geist','schattenFlug'], reward:{ xp:150, gold:48, cards:['phantomFuerst','schattenFlug'] }, type:'normal', diff:4 },
-      { id:'finsterfuerst', name:'Finsterfürst', emoji:'😈', hp:65, deck:['daemon','lich','schatten','draenei','schatten','schattengnom','phantomFuerst'], reward:{ xp:220, gold:70, cards:['schattendaemon','draenei'] }, type:'elite', diff:5 },
-      { id:'schattenkoenig', name:'König der Schatten', emoji:'👑', hp:100, deck:['lich','daemon','daemon','schatten','schatten','draenei','geist','phantomFuerst','schattendaemon','draeneiLich'], reward:{ xp:450, gold:150, cards:['draeneiLich','lichLicht'] }, type:'boss', diff:7 },
+      { id:'schattenassel', name:'Schattenassassin', emoji:'🗡', hp:45, deck:['schatten','daemon','flug','geist','schattenFlug','phantomFuerst','nachtFuerst','vampir'], reward:{ xp:150, gold:48, cards:['phantomFuerst','schattenFlug'] }, type:'normal', diff:4 },
+      { id:'finsterfuerst', name:'Finsterfürst', emoji:'😈', hp:65, deck:['daemon','lich','schatten','draenei','schattengnom','phantomFuerst','schattendaemon','nachtFuerst','hexe'], reward:{ xp:220, gold:70, cards:['schattendaemon','draenei'] }, type:'elite', diff:5 },
+      { id:'schattenkoenig', name:'König der Schatten', emoji:'👑', hp:100, deck:['lich','daemon','schatten','draenei','geist','phantomFuerst','schattendaemon','draeneiLich','nachtFuerst','schattengnom','vampir','nachtFuerst'], reward:{ xp:450, gold:150, cards:['draeneiLich','lichLicht'] }, type:'boss', diff:7 },
     ]
   },
   { id:'himmel', name:'Himmelsreich', emoji:'☁', desc:'Das Reich der Götter, letzte Prüfung.', minLevel:18, bg:'#1a1a2a',
     enemies:[
-      { id:'himmelsritter', name:'Himmelsritter', emoji:'⚔', hp:55, deck:['licht','ritter','flug','elfe','donner','lichtRitter'], reward:{ xp:200, gold:65, cards:['lichtRitter','lichtElfe'] }, type:'normal', diff:5 },
-      { id:'sturmgott', name:'Sturmgott', emoji:'⛈', hp:80, deck:['donner','drache','flug','flug','draenei','donner','donnerDrache','sturmAdler','tiefseeDrache'], reward:{ xp:300, gold:95, cards:['donnerDrache','tiefseeDrache'] }, type:'elite', diff:6 },
-      { id:'urdrache', name:'Urdrachengott', emoji:'🐉', hp:130, deck:['drache','lich','draenei','donner','feuer','eis','schatten','licht','donnerDrache','flugLich','draeneiLich','lichLicht'], reward:{ xp:600, gold:200, cards:['donnerDrache','flugLich'] }, type:'boss', diff:8 },
+      { id:'himmelsritter', name:'Himmelsritter', emoji:'⚔', hp:55, deck:['licht','ritter','flug','elfe','donner','lichtRitter','lichtElfe','sturmAdler'], reward:{ xp:200, gold:65, cards:['lichtRitter','lichtElfe'] }, type:'normal', diff:5 },
+      { id:'sturmgott', name:'Sturmgott', emoji:'⛈', hp:80, deck:['donner','drache','flug','draenei','donnerDrache','sturmAdler','tiefseeDrache','lichtRitter','sturmSchwinge'], reward:{ xp:300, gold:95, cards:['donnerDrache','tiefseeDrache'] }, type:'elite', diff:6 },
+      { id:'urdrache', name:'Urdrachengott', emoji:'🐉', hp:130, deck:['drache','lich','draenei','donner','feuer','eis','schatten','licht','donnerDrache','flugLich','draeneiLich','lichLicht','tiefseeDrache','feuerDrache'], reward:{ xp:600, gold:200, cards:['donnerDrache','flugLich'] }, type:'boss', diff:8 },
     ]
   },
 ];
@@ -915,12 +940,12 @@ const CARD_EXTRAS = {
   daemon:   { cost:2, firstStrike:true },
   gnom:     { cost:1 },
   draenei:  { cost:2 },
-  lich:     { cost:3, firstStrike:true },
+  lich:     { cost:3, firstStrike:true, dot:2, dotType:'poison' },
   erde:     { cost:2, taunt:true },
   wind:     { cost:2, firstStrike:true },
   kobold:   { cost:1 },
   blitz:    { cost:1, element:'thunder', firstStrike:true },
-  hexe:     { cost:2, firstStrike:true },
+  hexe:     { cost:2, firstStrike:true, dot:2, dotType:'poison' },
   vampir:   { cost:3, firstStrike:true },
   // Combo cards
   flammenOger:     { cost:5, element:'fire' },
@@ -931,7 +956,7 @@ const CARD_EXTRAS = {
   lichtElfe:       { cost:4 },
   schattendaemon:  { cost:6, firstStrike:true },
   runengnom:       { cost:4 },
-  draeneiLich:     { cost:6, firstStrike:true },
+  draeneiLich:     { cost:6, firstStrike:true, dot:3, dotType:'poison' },
   feuerDrache:     { cost:6, element:'fire' },
   eisGeist:        { cost:4, element:'ice' },
   donnerTroll:     { cost:6, element:'thunder', taunt:true },
@@ -955,8 +980,8 @@ const CARD_EXTRAS = {
   flugElfe:        { cost:5 },
   steinKobold:     { cost:4, taunt:true },
   sturmSchwinge:   { cost:4, element:'thunder', firstStrike:true },
-  feuerHexe:       { cost:5, element:'fire', firstStrike:true },
-  nachtFuerst:     { cost:5, firstStrike:true },
+  feuerHexe:       { cost:5, element:'fire', firstStrike:true, dot:3, dotType:'burn' },
+  nachtFuerst:     { cost:5, firstStrike:true, dot:2, dotType:'poison' },
 };
 
 // fire→ice, water→fire, thunder→water, ice→thunder
@@ -1105,6 +1130,7 @@ const Game = {
       State.researchQueue = s.researchQueue || [];
       State.defeatedEnemies = s.defeatedEnemies || [];
       if (State.researchQueue.length > 0) setTimeout(() => Lab._startTimer(), 100);
+      setTimeout(() => Lab._updateBadge(), 200);
       showScreen('screen-map');
       UI.renderMap();
       UI.updateHud();
@@ -1415,7 +1441,7 @@ const UI = {
       html += '<div class="separator" style="margin:10px 0"></div>';
     }
 
-    // Researchable
+    // Researchable — show ALL unknown combos (emoji-only if locked)
     const researchable = COMBO_RECIPES.filter(r => !known.includes(r.id) && !queueIds.includes(r.id));
     const labBusy = queue.length > 0;
     if (researchable.length > 0) {
@@ -1430,9 +1456,10 @@ const UI = {
         const btnLabel = labBusy ? '⏳ Belegt' : `🔬 ${researchLabel(rec.rarity)}`;
         const cardThumb = hasAll
           ? cardArt(rec.id, rec.emoji, 50)
-          : `<div style="width:50px;height:75px;background:#0a0a0a;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid #333;flex-shrink:0">🔒</div>`;
+          : `<div style="width:50px;height:75px;background:#0a0a0a;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid #333;flex-shrink:0">???</div>`;
+        // ingLine: if card owned → show name; if not → emoji only
         const ingLine = (c, has) => c
-          ? `${c.emoji} <span style="color:${rarityColor(c.rarity)};font-size:9px">●</span> <b style="font-size:10px;color:var(--text)">${c.name}</b> <span style="color:${has?'var(--green)':'var(--red)'};">${has?'✓':'✗'}</span>`
+          ? `${c.emoji} <span style="color:${rarityColor(c.rarity)};font-size:9px">●</span> <b style="font-size:10px;color:${has?'var(--text)':'var(--text3)'}">${has ? c.name : '???'}</b> <span style="color:${has?'var(--green)':'var(--red)'};">${has?'✓':'✗'}</span>`
           : '?';
         const c3row = c3 ? ` + ${ingLine(c3, hasC3)}` : '';
         const reqMap = {rare:'2× Gewöhnlich',epic:'1× Selten+',legendary:'1× Selten + 1× Episch',mythic:'alle 3 Selten+'};
@@ -1520,13 +1547,21 @@ const Lab = {
       }
       return true;
     });
-    if (changed) Game.save();
+    if (changed) { Game.save(); this._updateBadge(); }
+  },
+
+  _updateBadge() {
+    const badge = document.getElementById('lab-badge');
+    if (!badge) return;
+    const hasReady = State.researchQueue.some(r => Date.now() - r.startTime >= (r.duration || 1800000));
+    badge.style.display = hasReady ? '' : 'none';
   },
 
   _startTimer() {
     if (this._timerInterval) return;
     this._timerInterval = setInterval(() => {
       this.checkResearch();
+      this._updateBadge();
       State.researchQueue.forEach(r => {
         const el = document.getElementById('rtimer-' + r.id);
         if (el) {
@@ -1556,6 +1591,7 @@ const Battle = {
   attackMode: false,
   selectedAttackerIdx: -1,
   gameOver: false,
+  mulliganActive: false, mulliganSelected: [],
   playerMana: 0, playerMaxMana: 0,
   enemyMana: 0,
   enemy: null,
@@ -1586,8 +1622,54 @@ const Battle = {
     for (let i = 0; i < 3; i++) this._drawCard('enemy');
     document.getElementById('enemy-name-label').textContent = enemy.name;
     showScreen('screen-battle');
+    this.mulliganActive = true; this.mulliganSelected = [];
+    this._renderMulligan();
     this._render();
-    this._log(`Duell gegen ${enemy.name} beginnt! Runde 1 – kein Angriff erlaubt.`);
+  },
+
+  _renderMulligan() {
+    const overlay = document.getElementById('mulligan-overlay');
+    const handEl = document.getElementById('mulligan-hand');
+    const countEl = document.getElementById('mulligan-count');
+    if (!overlay || !handEl) return;
+    overlay.classList.add('active');
+    handEl.innerHTML = '';
+    this.playerHand.forEach((id, idx) => {
+      const c = getCard(id);
+      if (!c) return;
+      const card = document.createElement('div');
+      card.className = 'mulligan-card' + (this.mulliganSelected.includes(idx) ? ' selected' : '');
+      card.innerHTML = `<img src="${cardImgUrl(id)}" onerror="this.style.display='none'"><div class="mulligan-card-name">${c.emoji} ${c.name}</div>`;
+      card.onclick = () => Battle._toggleMulligan(idx);
+      handEl.appendChild(card);
+    });
+    if (countEl) countEl.textContent = `${this.mulliganSelected.length} / 2 gewählt`;
+  },
+
+  _toggleMulligan(idx) {
+    const sel = this.mulliganSelected;
+    const pos = sel.indexOf(idx);
+    if (pos >= 0) sel.splice(pos, 1);
+    else if (sel.length < 2) sel.push(idx);
+    this._renderMulligan();
+  },
+
+  _confirmMulligan() {
+    const overlay = document.getElementById('mulligan-overlay');
+    if (overlay) overlay.classList.remove('active');
+    if (this.mulliganSelected.length > 0) {
+      // Return selected cards to deck (sorted desc to avoid index shift)
+      [...this.mulliganSelected].sort((a,b)=>b-a).forEach(idx => {
+        const id = this.playerHand.splice(idx, 1)[0];
+        this.playerDeck.unshift(id);
+      });
+      this.playerDeck = shuffle(this.playerDeck);
+      const needed = this.mulliganSelected.length;
+      for (let i = 0; i < needed; i++) this._drawCard('player');
+    }
+    this.mulliganActive = false; this.mulliganSelected = [];
+    this._render();
+    this._log(`Duell gegen ${this.enemy.name} beginnt! Runde 1 – kein Angriff erlaubt.`);
   },
 
   _drawCard(who) {
@@ -1675,6 +1757,25 @@ const Battle = {
         }
       }
     }
+    // Partial 3-card hints: show when 2 of 3 ingredients in hand but not all 3
+    const handIds = this.playerHand.map(id => id);
+    COMBO_RECIPES.filter(r => r.card3 && State.discoveredCombos.includes(r.id)).forEach(r => {
+      const needed = [r.card1, r.card2, r.card3];
+      const inHand = needed.filter(id => handIds.includes(id));
+      if (inHand.length === 2) {
+        const missing = needed.find(id => !handIds.includes(id));
+        const mc = getCard(missing);
+        const key = 'partial_' + r.id;
+        if (!seen.has(key)) {
+          seen.add(key);
+          const inCards = inHand.map(id => getCard(id));
+          hints.push(`<span class="combo-hint-item dim" style="border-color:#8866aa50">` +
+            `${inCards[0]?.emoji||'?'}+${inCards[1]?.emoji||'?'}+<span style="color:var(--text3)">?${mc?.emoji||'?'}</span>=` +
+            `<span class="combo-hint-result" style="opacity:0.5">${r.emoji} ${r.name}</span>` +
+            `<span style="font-size:9px;color:var(--text3)"> fehlt:${mc?.emoji||'?'}</span></span>`);
+        }
+      }
+    });
     strip.innerHTML = hints.length > 0
       ? `<span style="font-size:10px;color:#c4b0f0;font-weight:800;margin-right:8px;flex-shrink:0">⚗ Mögl. Kombis:</span>` + hints.join('')
       : `<span style="font-size:10px;color:var(--text3)">Keine Kombinationen in der Hand</span>`;
@@ -1709,6 +1810,7 @@ const Battle = {
         if (c.taunt) tags += '<span class="abil-tag abil-taunt">SPOTT</span>';
         if (c.shieldActive) tags += '<span class="abil-tag abil-shield">🛡</span>';
         if (c.firstStrike) tags += '<span class="abil-tag abil-fast">⚡</span>';
+        if (c.poisoned > 0) { const dotIcon = c.poisonType === 'burn' ? '🔥' : '☠'; tags += `<span class="abil-tag abil-dot${c.poisonType==='burn'?' burn':''}">${dotIcon}${c.poisoned}</span>`; }
         if (c.element) { const eMap={fire:'🔥',water:'💧',ice:'❄',thunder:'⚡'}; tags += `<div class="abil-element">${eMap[c.element]||''}</div>`; }
         const sleepOverlay = c.justPlayed ? '<div class="mc-sleep">💤</div>' : '';
         const mcCls = 'mc' + ((!isEnemy && c.hasAttacked) ? ' attacked' : '');
@@ -1756,6 +1858,19 @@ const Battle = {
         }
       }
     }
+    // Field-combo hints: when a field card is selected in combo mode, highlight compatible hand cards
+    const fieldComboSet = new Set();
+    if (this.comboMode && this.comboFieldIdx >= 0) {
+      const fc = this.playerField[this.comboFieldIdx];
+      if (fc) {
+        baseIds.forEach(({ id: hId, i: hIdx }) => {
+          const is2Card = COMBO_RECIPES.some(r => !r.card3 && ((r.card1===fc.id&&r.card2===hId)||(r.card1===hId&&r.card2===fc.id)));
+          const is3Card = COMBO_RECIPES.some(r => r.card3 && State.discoveredCombos.includes(r.id) &&
+            [r.card1,r.card2,r.card3].includes(fc.id) && [r.card1,r.card2,r.card3].includes(hId));
+          if (is2Card || is3Card) fieldComboSet.add(hIdx);
+        });
+      }
+    }
     this.playerHand.forEach((id, idx) => {
       const c = getCard(id);
       if (!c) return;
@@ -1767,6 +1882,7 @@ const Battle = {
         if (idx === this.selectedHandIdx) cls += ' selected';
       }
       if (hasComboSet.has(idx) && !c.isEndform) cls += ' has-combo';
+      if (fieldComboSet.has(idx)) cls += ' hand-field-hint';
       const cardCost = c.cost || 1;
       const canAfford = this.playerMana >= cardCost;
       if (!canAfford && !this.comboMode) cls += ' unaffordable';
@@ -1996,6 +2112,12 @@ const Battle = {
     }
 
     if (tDead) { this.enemyField.splice(enemyIdx, 1); this.enemyGraveyard.push(target.id); }
+    else if (attacker.dot && !target.shieldActive) {
+      target.poisoned = Math.max(target.poisoned || 0, attacker.dot);
+      target.poisonType = attacker.dotType || 'poison';
+      const dotIcon = attacker.dotType === 'burn' ? '🔥' : '☠';
+      msgs.push(`${dotIcon} ${target.emoji} vergiftet (${attacker.dot}/Runde)!`);
+    }
     if (aDead) { this.playerField.splice(attackerIdx, 1); this.playerGraveyard.push(attacker.id); }
     this._log(msgs.join(' ')); this._render();
     if (!this._checkWin()) this._checkLoss();
@@ -2030,6 +2152,9 @@ const Battle = {
     if (this.phase !== 'enemy') return;
     this._drawCard('enemy');
     this.enemyMana = Math.min(this.turn, 8);
+    // Process DoT on enemy field (from player poison cards)
+    const dotMsgs = this._processDot(this.enemyField, this.enemyGraveyard, null, false);
+    if (dotMsgs.length > 0) { this._log(dotMsgs.join(' ')); this._render(); if (this._checkWin()) return; }
     // Clear justPlayed from last turn before playing new cards
     this.enemyField.forEach(c => { c.hasAttacked = false; c.justPlayed = false; });
     // Smart card play: keep playing while mana allows and field not full
@@ -2106,6 +2231,12 @@ const Battle = {
     }
 
     if (tDead) { this.playerField.splice(targetIdx, 1); this.playerGraveyard.push(target.id); }
+    else if (attacker.dot && !target.shieldActive) {
+      target.poisoned = Math.max(target.poisoned || 0, attacker.dot);
+      target.poisonType = attacker.dotType || 'poison';
+      const dotIcon = attacker.dotType === 'burn' ? '🔥' : '☠';
+      msgs.push(`${dotIcon} ${target.emoji} vergiftet (${attacker.dot}/Runde)!`);
+    }
     if (aDead) { this.enemyField.splice(attackerIdx, 1); this.enemyGraveyard.push(attacker.id); }
     this._log(msgs.join(' ')); this._render();
     if (this._checkLoss() || this._checkWin()) return;
@@ -2127,6 +2258,27 @@ const Battle = {
     return bestIdx;
   },
 
+  _processDot(field, graveyard, hpRef, isPlayer) {
+    const msgs = [];
+    for (let i = field.length - 1; i >= 0; i--) {
+      const c = field[i];
+      if ((c.poisoned || 0) > 0) {
+        c.def -= c.poisoned;
+        const dotIcon = c.poisonType === 'burn' ? '🔥' : '☠';
+        msgs.push(`${dotIcon} ${c.emoji} -${c.poisoned} DEF`);
+        if (c.def <= 0) {
+          const excess = -c.def;
+          if (isPlayer) this.playerHp = Math.max(0, this.playerHp - excess);
+          else this.enemyHp = Math.max(0, this.enemyHp - excess);
+          if (excess > 0) msgs.push(`→ -${excess} LP`);
+          msgs.push(`💀 ${c.emoji} durch ${c.poisonType==='burn'?'Brennen':'Gift'}!`);
+          graveyard.push(c.id); field.splice(i, 1);
+        }
+      }
+    }
+    return msgs;
+  },
+
   _finishEnemyTurn() {
     this.turn++;
     this.phase = 'player';
@@ -2135,8 +2287,12 @@ const Battle = {
     this.playerMaxMana = Math.min(this.turn, 8);
     this.playerMana = this.playerMaxMana;
     this._drawCard('player');
+    // Process DoT on player field (from enemy poison cards)
+    const dotMsgs = this._processDot(this.playerField, this.playerGraveyard, null, true);
+    if (dotMsgs.length > 0) this._log(dotMsgs.join(' '));
     this._render();
-    if (!this._checkLoss()) this._log(`Zug ${this.turn} – dein Zug! 💎${this.playerMana} Mana`);
+    if (this._checkLoss()) return;
+    if (!this._checkWin()) this._log(`Zug ${this.turn} – dein Zug! 💎${this.playerMana} Mana`);
   },
 
   _checkWin() {
@@ -2146,7 +2302,7 @@ const Battle = {
       const key = State.currentRegion.id + '_' + this.enemy.id;
       const isFirstWin = !State.defeatedEnemies.includes(key);
       if (isFirstWin) State.defeatedEnemies.push(key);
-      const goldReward = isFirstWin ? 10 : 5;
+      const goldReward = isFirstWin ? 20 : 10;
       State.player.gold += goldReward;
       const r = this.enemy.reward;
       State.player.wins++;
@@ -2231,7 +2387,11 @@ const Shop = {
     const commons = BASE_CARDS.filter(c => c.rarity === 'common');
     const rares   = BASE_CARDS.filter(c => c.rarity === 'rare');
     const epics   = BASE_CARDS.filter(c => c.rarity === 'epic');
-    const chip = c => `<span style="display:inline-block;font-size:10px;color:${rarityColor(c.rarity)};background:rgba(0,0,0,0.3);padding:2px 7px;border-radius:12px;border:1px solid ${rarityColor(c.rarity)}50;margin:2px 2px 0 0">${c.emoji} ${c.name}</span>`;
+    const chip = c => {
+      const owned = (State.collection[c.id] || 0) > 0;
+      const newBadge = owned ? '' : `<span style="font-size:8px;background:var(--accent);color:#000;border-radius:3px;padding:0 3px;margin-left:2px;font-weight:800">NEU</span>`;
+      return `<span style="display:inline-block;font-size:10px;color:${rarityColor(c.rarity)};background:rgba(0,0,0,0.3);padding:2px 7px;border-radius:12px;border:1px solid ${rarityColor(c.rarity)}${owned?'50':'aa'};margin:2px 2px 0 0;opacity:${owned?0.6:1}">${c.emoji} ${c.name}${newBadge}</span>`;
+    };
     const label = txt => `<div style="font-size:9px;color:var(--text3);margin-bottom:2px">${txt}</div>`;
     const pools = {
       'pool-truhe':        { sections: [[commons, 'Gewöhnlich:']] },
