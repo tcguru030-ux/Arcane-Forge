@@ -237,6 +237,18 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 .battle-btn.btn-combo { border-color: rgba(124,92,191,0.5); color: #c4b0f0; }
 .battle-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+.battle-ctx-menu { background:var(--bg2); border:1px solid var(--accent2); border-radius:12px; padding:4px; min-width:140px; box-shadow:0 4px 20px rgba(0,0,0,0.8); }
+.ctx-btn { display:block; width:100%; padding:10px 16px; font-size:13px; font-weight:700; color:var(--text); background:none; border:none; border-radius:8px; cursor:pointer; text-align:left; font-family:var(--font); transition:background 0.15s; }
+.ctx-btn:hover { background:var(--bg3); }
+.ctx-btn.ctx-atk { color:var(--accent); }
+.ctx-btn.ctx-def { color:#7ec8e8; }
+.ctx-btn.ctx-combo { color:#c4b0f0; }
+.ctx-btn.ctx-play { color:var(--green); }
+.ctx-btn.ctx-dimmed { opacity:0.45; cursor:not-allowed; }
+.field-slot.def-pos { outline: 2px solid #7ec8e8; }
+.field-slot.def-pos .mc { border-color:#7ec8e8; }
+.def-badge { position:absolute; bottom:2px; right:2px; font-size:8px; font-weight:900; color:#7ec8e8; background:rgba(0,30,60,0.9); border-radius:4px; padding:1px 3px; }
+
 .combo-hint-strip { flex-shrink: 0; overflow-x: auto; white-space: nowrap; padding: 5px 10px;
   background: rgba(124,92,191,0.07); border-top: 1px solid rgba(124,92,191,0.2);
   scrollbar-width: none; min-height: 28px; display: flex; align-items: center; }
@@ -660,11 +672,10 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
   </div>
   <div class="mana-bar" id="mana-bar"></div>
   <div class="battle-hand" id="battle-hand"></div>
-  <div class="battle-actions">
-    <button class="battle-btn" id="btn-play" onclick="Battle.playCard()">Spielen</button>
-    <button class="battle-btn btn-combo" id="btn-combo" onclick="Battle.startCombo()">Kombi</button>
+  <div class="battle-actions" style="grid-template-columns:1fr">
     <button class="battle-btn btn-end" id="btn-endturn" onclick="Battle.endTurn()">Zug enden</button>
   </div>
+  <div id="battle-ctx-menu" style="display:none;position:fixed;z-index:300;flex-direction:column;gap:3px;"></div>
   <!-- Mulligan Overlay -->
   <div id="mulligan-overlay">
     <div class="mulligan-title">Mulligan</div>
@@ -1830,9 +1841,8 @@ const Battle = {
     this._renderComboHints();
     const active = isPlayer && !this.gameOver;
     const unattacked = this.playerField.filter(c => !c.hasAttacked).length;
-    document.getElementById('btn-play').disabled = !(active && this.selectedHandIdx >= 0 && !this.attackMode);
-    document.getElementById('btn-combo').disabled = !(active && this.playerHand.length >= 2 && !this.attackMode);
     document.getElementById('btn-endturn').disabled = !active || this.attackMode;
+    this._hideCtxMenu();
   },
 
   _renderComboHints() {
@@ -1851,7 +1861,8 @@ const Battle = {
           const ca = getCard(ia), cb = getCard(ib);
           const cost = (ca.cost||1) + (cb.cost||1);
           const ok = this.playerMana >= cost;
-          hints.push(`<span class="combo-hint-item${ok?'':' dim'}">${ca.emoji}+${cb.emoji}=<span class="combo-hint-result">${recipe.emoji} ${recipe.name}</span><span class="combo-hint-cost">💎${cost}</span></span>`);
+          const ci = (c) => `<img src="${cardImgUrl(c.id)}" style="width:18px;height:18px;object-fit:cover;border-radius:3px;vertical-align:middle" onerror="this.style.display='none'">`;
+          hints.push(`<span class="combo-hint-item${ok?'':' dim'}">${ci(ca)}+${ci(cb)}=<span class="combo-hint-result">${ci(recipe)} ${recipe.name}</span><span class="combo-hint-cost">💎${cost}</span></span>`);
         }
       }
     }
@@ -1867,7 +1878,8 @@ const Battle = {
             const ca = getCard(ia), cb = getCard(ib), cc = getCard(ic);
             const cost = (ca.cost||1) + (cb.cost||1) + (cc.cost||1);
             const ok = this.playerMana >= cost;
-            hints.push(`<span class="combo-hint-item${ok?'':' dim'}">${ca.emoji}+${cb.emoji}+${cc.emoji}=<span class="combo-hint-result">${recipe.emoji} ${recipe.name}</span><span class="combo-hint-cost">💎${cost}</span></span>`);
+            const ci3 = (c) => `<img src="${cardImgUrl(c.id)}" style="width:18px;height:18px;object-fit:cover;border-radius:3px;vertical-align:middle" onerror="this.style.display='none'">`;
+            hints.push(`<span class="combo-hint-item${ok?'':' dim'}">${ci3(ca)}+${ci3(cb)}+${ci3(cc)}=<span class="combo-hint-result">${ci3(recipe)} ${recipe.name}</span><span class="combo-hint-cost">💎${cost}</span></span>`);
           }
         }
       }
@@ -1919,6 +1931,7 @@ const Battle = {
         if (isActiveAttacker) cls += ' active-attacker';
         if (isComboField) cls += ' selectable-attacker';
         if (isSelectedComboField) cls += ' active-attacker';
+        if (!isEnemy && c.defenseMode) cls += ' def-pos';
         slot.className = cls;
         // Ability tags
         let tags = '';
@@ -1928,10 +1941,12 @@ const Battle = {
         if (c.poisoned > 0) { const dotIcon = c.poisonType === 'burn' ? '🔥' : '☠'; tags += `<span class="abil-tag abil-dot${c.poisonType==='burn'?' burn':''}">${dotIcon}${c.poisoned}</span>`; }
         if (c.element) { const eMap={fire:'🔥',water:'💧',ice:'❄',thunder:'⚡'}; tags += `<div class="abil-element">${eMap[c.element]||''}</div>`; }
         const sleepOverlay = c.justPlayed ? '<div class="mc-sleep">💤</div>' : '';
+        const defBadge = (!isEnemy && c.defenseMode) ? '<div class="def-badge">DEF</div>' : '';
         const mcCls = 'mc' + ((!isEnemy && c.hasAttacked) ? ' attacked' : '');
         const imgUrl = cardImgUrl(c.id);
         slot.innerHTML = `<div class="${mcCls}" style="background:${mcBg(c)}">
           ${sleepOverlay}
+          ${defBadge}
           <img class="mc-img" src="${imgUrl}" onerror="this.style.display='none';this.nextSibling.style.display='block'">
           <span class="mc-em">${c.emoji}</span>
           <div class="mc-cost">${c.cost||1}</div>
@@ -1944,7 +1959,8 @@ const Battle = {
         else if (isActiveAttacker) { slot.onclick = () => { Battle.attackMode = false; Battle.selectedAttackerIdx = -1; Battle._log('Angriff abgebrochen.'); Battle._render(); }; }
         else if (isSelectedComboField) { const idx = i; slot.onclick = () => Battle._selectFieldComboCard(idx); }
         else if (isComboField) { const idx = i; slot.onclick = () => Battle._selectFieldComboCard(idx); }
-        else { const card = c; const idx = i; const canAtk = canDirectAttack; slot.onclick = () => Battle.showBattleCardDetail(card, canAtk ? idx : -1); }
+        else if (!isEnemy) { const idx = i; slot.onclick = (e) => { if (Battle.comboMode) Battle._selectFieldComboCard(idx); else { e.stopPropagation(); Battle._showCtxMenu('field', idx, e); } }; }
+        else { const card = c; slot.onclick = () => Battle.showBattleCardDetail(card, -1); }
       } else {
         slot.className = 'field-slot';
         slot.innerHTML = '<span style="font-size:11px;color:var(--text3)">·</span>';
@@ -2003,7 +2019,10 @@ const Battle = {
       if (!canAfford && !this.comboMode) cls += ' unaffordable';
       div.className = cls;
       div.innerHTML = `<div class="mana-cost-badge">${cardCost}</div><div class="hc-art"><img src="${cardImgUrl(c.id)}" onerror="this.style.display='none';this.nextSibling.style.display='block'"><span class="hc-em">${c.emoji}</span></div><div class="hc-foot"><div class="hand-card-name">${c.name}</div><div class="hand-card-stats"><span class="mini-atk">⚔${c.atk}</span><span class="mini-def">🛡${c.def}</span></div></div>`;
-      div.onclick = () => Battle._selectHandCard(idx);
+      div.onclick = (e) => {
+        if (Battle.comboMode) { Battle._selectHandCard(idx); }
+        else { e.stopPropagation(); Battle._showCtxMenu('hand', idx, e); }
+      };
       el.appendChild(div);
     });
   },
@@ -2256,6 +2275,7 @@ const Battle = {
   },
 
   _doEndTurn() {
+    this._hideCtxMenu();
     this.attackMode = false; this.selectedAttackerIdx = -1;
     this.comboMode = false; this.comboFieldIdx = -1; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1; this.selectedHandIdx = -1;
     this.phase = 'enemy';
@@ -2329,21 +2349,31 @@ const Battle = {
       setTimeout(() => this._executeEnemyAttacks(), 900); return;
     }
 
-    const newTDef = target.def - effectiveAtk;
-    const newADef = attacker.def - target.atk;
     let tDead = false, aDead = false;
 
-    if (newTDef <= 0) {
-      tDead = true; const lp = -newTDef; this.playerHp = Math.max(0, this.playerHp - lp);
-      msgs.push(`💢 ${attacker.emoji}→${target.emoji}: 💀${lp>0?` Du -${lp}LP`:''}`);
-      if (!attacker.firstStrike) {
+    if (target.defenseMode) {
+      // Yu-Gi-Oh defense mode: ATK vs DEF, no LP damage, no counter-attack
+      if (effectiveAtk > target.def) {
+        tDead = true;
+        msgs.push(`💢 ${attacker.emoji} zerstört ${target.emoji} (Verteidigung)! Kein LP-Schaden.`);
+      } else {
+        msgs.push(`💢 ${attacker.emoji} kann ${target.emoji}s Verteidigung nicht brechen!`);
+      }
+    } else {
+      const newTDef = target.def - effectiveAtk;
+      const newADef = attacker.def - target.atk;
+      if (newTDef <= 0) {
+        tDead = true; const lp = -newTDef; this.playerHp = Math.max(0, this.playerHp - lp);
+        msgs.push(`💢 ${attacker.emoji}→${target.emoji}: 💀${lp>0?` Du -${lp}LP`:''}`);
+        if (!attacker.firstStrike) {
+          if (newADef <= 0) { aDead = true; const lp2=-newADef; this.enemyHp=Math.max(0,this.enemyHp-lp2); msgs.push(`💀${attacker.emoji}${lp2>0?` Gegner -${lp2}LP`:''}`); }
+          else { attacker.def = newADef; msgs.push(`${attacker.emoji} DEF→${newADef}`); }
+        } else { msgs.push(`⚡ First Strike!`); }
+      } else {
+        target.def = newTDef; msgs.push(`💢 ${attacker.emoji}→${target.emoji}: DEF→${newTDef}`);
         if (newADef <= 0) { aDead = true; const lp2=-newADef; this.enemyHp=Math.max(0,this.enemyHp-lp2); msgs.push(`💀${attacker.emoji}${lp2>0?` Gegner -${lp2}LP`:''}`); }
         else { attacker.def = newADef; msgs.push(`${attacker.emoji} DEF→${newADef}`); }
-      } else { msgs.push(`⚡ First Strike!`); }
-    } else {
-      target.def = newTDef; msgs.push(`💢 ${attacker.emoji}→${target.emoji}: DEF→${newTDef}`);
-      if (newADef <= 0) { aDead = true; const lp2=-newADef; this.enemyHp=Math.max(0,this.enemyHp-lp2); msgs.push(`💀${attacker.emoji}${lp2>0?` Gegner -${lp2}LP`:''}`); }
-      else { attacker.def = newADef; msgs.push(`${attacker.emoji} DEF→${newADef}`); }
+      }
     }
 
     if (tDead) { this.playerField.splice(targetIdx, 1); this.playerGraveyard.push(target.id); }
@@ -2576,41 +2606,64 @@ const Shop = {
 
   _showChestAnim(def, cards, onClose) {
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.93);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:300;gap:20px;';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.97);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:3000;gap:20px;';
     const chestVisual = def.imgFile
-      ? `<img src="${this._chestImgUrl(def.imgFile)}" style="width:110px;height:110px;object-fit:contain;animation:comboBurst 0.6s cubic-bezier(0.175,0.885,0.32,1.275);">`
-      : `<span style="font-size:80px;animation:comboBurst 0.6s cubic-bezier(0.175,0.885,0.32,1.275);">${def.emoji||'📦'}</span>`;
+      ? `<img src="${this._chestImgUrl(def.imgFile)}" style="width:130px;height:130px;object-fit:contain;animation:comboBurst 0.6s cubic-bezier(0.175,0.885,0.32,1.275);">`
+      : `<span style="font-size:90px;animation:comboBurst 0.6s cubic-bezier(0.175,0.885,0.32,1.275);">${def.emoji||'📦'}</span>`;
     const phase1 = document.createElement('div');
-    phase1.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:14px;cursor:pointer;';
-    phase1.innerHTML = `${chestVisual}<div style="font-size:18px;font-weight:800;color:var(--accent)">${def.name}</div><div style="font-size:12px;color:var(--text3);animation:pulse 1s infinite">Tippe zum Öffnen</div>`;
+    phase1.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:18px;cursor:pointer;';
+    phase1.innerHTML = `${chestVisual}<div style="font-size:20px;font-weight:800;color:var(--accent);letter-spacing:1px">${def.name}</div><div style="font-size:13px;color:var(--text3);animation:pulse 1.2s infinite;letter-spacing:1px">Tippe zum Öffnen</div>`;
+
     const phase2 = document.createElement('div');
-    phase2.style.cssText = 'display:none;flex-direction:column;align-items:center;gap:16px;width:100%;padding:0 24px;box-sizing:border-box;';
-    const titleEl = document.createElement('div');
-    titleEl.style.cssText = 'font-size:18px;font-weight:800;color:var(--accent)';
-    titleEl.textContent = def.name + ' geöffnet!';
-    const resultsEl = document.createElement('div');
-    resultsEl.style.cssText = 'display:flex;gap:14px;flex-wrap:wrap;justify-content:center;';
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = 'Weiter';
-    closeBtn.style.cssText = 'padding:12px 32px;border-radius:10px;border:1px solid var(--accent);background:rgba(200,166,74,0.18);color:var(--accent);font-size:15px;font-family:var(--font);cursor:pointer;font-weight:700;margin-top:8px;';
-    phase2.append(titleEl, resultsEl, closeBtn);
+    phase2.style.cssText = 'display:none;flex-direction:column;align-items:center;width:100%;max-width:360px;padding:0 20px;box-sizing:border-box;gap:16px;';
+
+    const cardView = document.createElement('div');
+    cardView.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:12px;animation:fadein 0.4s ease;width:100%;';
+
+    const navBtn = document.createElement('button');
+    navBtn.style.cssText = 'margin-top:4px;padding:13px 40px;border-radius:12px;border:1px solid var(--accent);background:rgba(126,200,232,0.15);color:var(--accent);font-size:16px;font-weight:800;cursor:pointer;font-family:var(--font);letter-spacing:1px;';
+
+    phase2.append(cardView, navBtn);
     overlay.append(phase1, phase2);
     document.getElementById('app').appendChild(overlay);
+
+    let cardIdx = 0;
+    const showCard = (i) => {
+      const id = cards[i];
+      const c = getCard(id);
+      if (!c) return;
+      const rarLbl = (RARITY[c.rarity]||RARITY.common).label;
+      const extraData = CARD_EXTRAS[id] || {};
+      const abilityHtml = c.ability ? `<div style="margin:0 0 4px;padding:8px 12px;background:rgba(126,200,232,0.08);border:1px solid rgba(126,200,232,0.2);border-radius:8px;font-size:12px;color:#c4b0f0;font-weight:600;text-align:center;">${c.ability}</div>` : '';
+      const costHtml = extraData.cost ? `<div style="font-size:12px;color:var(--text2)">Mana: <b style="color:var(--accent)">${extraData.cost}</b></div>` : '';
+      cardView.innerHTML = `
+        <div style="font-size:13px;color:var(--text3);letter-spacing:1px">${cards.length > 1 ? `Karte ${i+1} von ${cards.length}` : 'Du erhältst!'}</div>
+        <div style="animation:comboBurst 0.5s ease;">${cardArt(id, c.emoji, 140)}</div>
+        <div style="font-size:22px;font-weight:900;color:${rarityColor(c.rarity)};letter-spacing:0.5px">${c.name}</div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <span style="font-size:11px;font-weight:700;color:${rarityColor(c.rarity)};background:rgba(0,0,0,0.4);border:1px solid ${rarityColor(c.rarity)}60;border-radius:20px;padding:3px 10px">${rarLbl}</span>
+          <span style="font-size:11px;color:var(--text2)">${c.type === 'element' ? 'Element' : 'Kreatur'}</span>
+        </div>
+        <div style="display:flex;gap:20px;font-size:18px;font-weight:900">
+          <span style="color:var(--red)">ATK ${c.atk}</span>
+          <span style="color:var(--accent)">DEF ${c.def}</span>
+        </div>
+        ${costHtml}
+        ${abilityHtml}
+        <div style="font-size:12px;color:var(--text2);text-align:center;font-style:italic;max-width:280px">${c.desc||''}</div>`;
+      navBtn.textContent = i < cards.length - 1 ? 'Nächste ›' : 'Super!';
+      navBtn.onclick = () => {
+        if (cardIdx < cards.length - 1) { cardIdx++; showCard(cardIdx); }
+        else { overlay.remove(); if (onClose) onClose(); }
+      };
+    };
+
     const open = () => {
       phase1.style.display = 'none';
       phase2.style.display = 'flex';
-      cards.forEach((id, i) => setTimeout(() => {
-        const c = getCard(id);
-        if (!c) return;
-        const d = document.createElement('div');
-        d.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;animation:slideUp 0.35s ease;';
-        d.innerHTML = `${cardArt(id, c.emoji, 72)}<div style="font-size:12px;font-weight:700;color:var(--text);text-align:center;max-width:80px">${c.name}</div><div style="font-size:10px;color:${rarityColor(c.rarity)};font-weight:700">${(RARITY[c.rarity]||RARITY.common).label}</div>`;
-        resultsEl.appendChild(d);
-      }, i * 280));
-      closeBtn.onclick = () => { overlay.remove(); if (onClose) onClose(); };
+      showCard(0);
     };
-    const timer = setTimeout(open, 1500);
-    phase1.onclick = () => { clearTimeout(timer); open(); };
+    phase1.onclick = open;
   },
 
   _rollCards(type) {
