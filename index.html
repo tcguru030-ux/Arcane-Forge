@@ -454,9 +454,9 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 .chest-result-card-inner:hover { transform:scale(1.05); }
 
 /* ---- NAV BAR ---- */
-.navbar { display: flex; border-top: 1px solid var(--border2); background: var(--bg2); flex-shrink: 0; }
-.nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; padding: 12px 4px; cursor: pointer; color: var(--text3); font-size: 11px; background: none; border: none; font-family: var(--font); transition: color 0.2s; letter-spacing: 0.5px; font-weight: 600; }
-.nav-btn.active { color: var(--accent); }
+.navbar { display: flex; gap: 6px; padding: 8px 10px 10px; border-top: 1px solid var(--border2); background: var(--bg2); flex-shrink: 0; }
+.nav-btn { flex: 1; display: flex; align-items: center; justify-content: center; padding: 11px 4px; cursor: pointer; color: var(--text2); font-size: 11px; background: rgba(126,200,232,0.06); border: 1px solid var(--border2); border-radius: 10px; font-family: var(--font); transition: color 0.18s, background 0.18s, border-color 0.18s; letter-spacing: 0.5px; font-weight: 700; text-transform: uppercase; }
+.nav-btn.active { color: var(--accent); background: rgba(126,200,232,0.13); border-color: var(--accent2); }
 .nav-btn-icon { display: none; }
 
 /* ---- UTILS ---- */
@@ -484,7 +484,7 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 .research-btn.forge { border-color: rgba(39,174,96,0.5); background: rgba(39,174,96,0.1); color: var(--green); }
 /* ---- MANA & ABILITY BADGES ---- */
 .mana-crystal { color:#74b9e8; font-weight:800; }
-.mana-cost-badge { position:absolute; top:3px; left:4px; background:rgba(26,58,106,0.92); color:#74b9e8; font-size:10px; font-weight:800; padding:1px 5px; border-radius:6px; min-width:16px; text-align:center; line-height:1.4; }
+.mana-cost-badge { position:absolute; top:3px; left:4px; background:rgba(14,40,80,0.96); color:#9ddff5; font-size:11px; font-weight:900; padding:2px 6px; border-radius:6px; min-width:18px; text-align:center; line-height:1.4; z-index:10; border:1px solid rgba(126,200,232,0.5); }
 .mana-bar { flex-shrink:0; display:flex; align-items:center; justify-content:center; gap:5px; padding:6px 12px; background:rgba(26,58,106,0.25); border-top:1px solid rgba(116,185,232,0.15); }
 .mana-bar-label { font-size:11px; font-weight:800; color:#74b9e8; letter-spacing:1px; text-transform:uppercase; margin-right:4px; }
 .mana-bar-val { font-size:13px; font-weight:900; color:#74b9e8; min-width:28px; text-align:right; margin-left:2px; }
@@ -733,7 +733,6 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
       <div class="chest-icon"><img src="https://ebpndnpiuummplxyhqai.supabase.co/storage/v1/object/public/card-images/truhe.png" alt="Truhe"></div>
       <div class="chest-info">
         <div class="chest-name">Truhe</div>
-        <div class="chest-desc">Enthält 1 zufällige <b>gewöhnliche</b> Basiskarte.</div>
         <button class="chest-preview-btn" onclick="event.stopPropagation();Shop.showPreview('truhe')">Karten ansehen</button>
         <div class="chest-price">100 Gold</div>
         <div id="pool-truhe" class="chest-pool"></div>
@@ -743,7 +742,6 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
       <div class="chest-icon"><img src="https://ebpndnpiuummplxyhqai.supabase.co/storage/v1/object/public/card-images/seltenetruhe.png" alt="Seltene Truhe"></div>
       <div class="chest-info">
         <div class="chest-name">Seltene Truhe</div>
-        <div class="chest-desc">1 gewöhnliche + <b>30% Chance</b> auf eine seltene Karte.</div>
         <button class="chest-preview-btn" onclick="event.stopPropagation();Shop.showPreview('selteneTruhe')">Karten ansehen</button>
         <div class="chest-price">200 Gold</div>
         <div id="pool-selteneTruhe" class="chest-pool"></div>
@@ -753,7 +751,6 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
       <div class="chest-icon"><img src="https://ebpndnpiuummplxyhqai.supabase.co/storage/v1/object/public/card-images/epischetruhe.png" alt="Epische Truhe"></div>
       <div class="chest-info">
         <div class="chest-name">Epische Truhe</div>
-        <div class="chest-desc">1 gewöhnliche + <b>40% selten</b> oder <b>20% episch</b>.</div>
         <button class="chest-preview-btn" onclick="event.stopPropagation();Shop.showPreview('epischeTruhe')">Karten ansehen</button>
         <div class="chest-price">300 Gold</div>
         <div id="pool-epischeTruhe" class="chest-pool"></div>
@@ -763,7 +760,6 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
       <div class="chest-icon"><img src="https://ebpndnpiuummplxyhqai.supabase.co/storage/v1/object/public/card-images/truhedermythen.png" alt="Truhe der Mythen"></div>
       <div class="chest-info">
         <div class="chest-name">Truhe der Mythen</div>
-        <div class="chest-desc">1 seltene Karte + <b>25% Chance</b> auf eine epische Karte.</div>
         <button class="chest-preview-btn" onclick="event.stopPropagation();Shop.showPreview('mythTruhe')">Karten ansehen</button>
         <div class="chest-price">500 Gold</div>
         <div id="pool-mythTruhe" class="chest-pool"></div>
@@ -927,46 +923,60 @@ const COMBO_RECIPES = [
 ];
 
 const REGIONS = [
-  { id:'anfaenger', name:'Anfängergebiet', emoji:'🌾', desc:'Sanfte Hügel und einfache Feinde.', minLevel:1, bg:'#1a2a10',
+  { id:'goblinwiese', name:'Goblinwiese', desc:'Sanfte Hügel, bewacht von frechen Goblins.', bg:'#1a2a10',
     enemies:[
-      { id:'goblin', name:'Waldgoblin', emoji:'👺', hp:20, deck:['feuer','wasser','gnom','kobold','eis','wind'], reward:{ xp:30, gold:10, cards:['wasser','gnom'] }, type:'normal', diff:1 },
-      { id:'kobold', name:'Koboldschurke', emoji:'🧌', hp:25, deck:['eis','feuer','troll','ritter','erde','wind','blitz','kobold'], reward:{ xp:50, gold:15, cards:['feuer','ritter'] }, type:'normal', diff:2 },
-      { id:'waldtroll', name:'Waldtroll', emoji:'👹', hp:35, deck:['troll','feuer','wasser','ritter','erde','kobold','eisRitter','steinKobold'], reward:{ xp:80, gold:25, cards:['troll','eisRitter'] }, type:'elite', diff:3 },
+      { id:'goblin', name:'Waldgoblin', hp:20, deck:['feuer','wasser','gnom','kobold','eis','wind'], reward:{ xp:30, gold:10, cards:[] }, type:'normal', diff:1 },
+      { id:'kobold', name:'Koboldschurke', hp:25, deck:['eis','feuer','troll','ritter','erde','wind','blitz','kobold'], reward:{ xp:50, gold:15, cards:[] }, type:'normal', diff:2 },
+      { id:'waldtroll', name:'Waldtroll', hp:35, deck:['troll','feuer','wasser','ritter','erde','kobold','eisRitter','steinKobold'], reward:{ xp:80, gold:25, cards:[] }, type:'elite', diff:3 },
     ]
   },
-  { id:'wald', name:'Waldregion', emoji:'🌲', desc:'Dunkle Wälder voller alter Geheimnisse.', minLevel:3, bg:'#0d2010',
+  { id:'verwunschenerWald', name:'Verwunschener Wald', desc:'Dunkle Wälder voller alter Geheimnisse.', bg:'#0d2010',
     enemies:[
-      { id:'waldelfe', name:'Dunkelelfe', emoji:'🧝', hp:30, deck:['schatten','elfe','licht','feuer','flug','schattenFlug','wind'], reward:{ xp:70, gold:20, cards:['elfe','lichtElfe'] }, type:'normal', diff:2 },
-      { id:'baumgeist', name:'Waldgeist', emoji:'👻', hp:28, deck:['geist','wasser','elfe','licht','flugElfe','wasserElfe','kobold'], reward:{ xp:60, gold:18, cards:['geist','wasserGeist'] }, type:'normal', diff:2 },
-      { id:'walddrache', name:'Walddrache', emoji:'🐉', hp:45, deck:['drache','feuer','schatten','troll','ritter','elfe','flammenOger','feuerDrache','schattenFlug','feuerElfe'], reward:{ xp:130, gold:40, cards:['drache','feuerDrache'] }, type:'boss', diff:4 },
+      { id:'waldelfe', name:'Dunkelelfe', hp:30, deck:['schatten','elfe','licht','feuer','flug','schattenFlug','wind'], reward:{ xp:70, gold:20, cards:[] }, type:'normal', diff:2 },
+      { id:'baumgeist', name:'Waldgeist', hp:28, deck:['geist','wasser','elfe','licht','flugElfe','wasserElfe','kobold'], reward:{ xp:60, gold:18, cards:[] }, type:'normal', diff:2 },
+      { id:'walddrache', name:'Walddrache', hp:45, deck:['drache','feuer','schatten','troll','ritter','elfe','flammenOger','feuerDrache','schattenFlug','feuerElfe'], reward:{ xp:130, gold:40, cards:[] }, type:'boss', diff:4 },
     ]
   },
-  { id:'eis', name:'Eisregion', emoji:'❄', desc:'Ewiger Frost und schneidende Winde.', minLevel:5, bg:'#0d1a2a',
+  { id:'eiswueste', name:'Eiswüste', desc:'Ewiger Frost und schneidende Winde.', bg:'#0d1a2a',
     enemies:[
-      { id:'eiswolf', name:'Eiswolf', emoji:'🐺', hp:35, deck:['eis','flug','donner','eisGeist','sturmAdler','blitz','wind'], reward:{ xp:90, gold:28, cards:['eis','sturmAdler'] }, type:'normal', diff:3 },
-      { id:'frosttroll', name:'Frosttroll', emoji:'👹', hp:40, deck:['eis','troll','ritter','eisRitter','erde','steinKobold','wasser','blitz'], reward:{ xp:110, gold:35, cards:['eisRitter','troll'] }, type:'elite', diff:3 },
-      { id:'eisdrache', name:'Gletscherdrache', emoji:'🐉', hp:60, deck:['drache','eis','donner','wasser','eisDrache','tiefseeDrache','sturmAdler','eisRitter','eisGeist','sturmSchwinge'], reward:{ xp:200, gold:65, cards:['eisDrache','donner'] }, type:'boss', diff:5 },
+      { id:'eiswolf', name:'Eiswolf', hp:35, deck:['eis','flug','donner','eisGeist','sturmAdler','blitz','wind'], reward:{ xp:90, gold:28, cards:[] }, type:'normal', diff:3 },
+      { id:'frosttroll', name:'Frosttroll', hp:40, deck:['eis','troll','ritter','eisRitter','erde','steinKobold','wasser','blitz'], reward:{ xp:110, gold:35, cards:[] }, type:'elite', diff:3 },
+      { id:'eisdrache', name:'Gletscherdrache', hp:60, deck:['drache','eis','donner','wasser','eisDrache','tiefseeDrache','sturmAdler','eisRitter','eisGeist','sturmSchwinge'], reward:{ xp:200, gold:65, cards:[] }, type:'boss', diff:5 },
     ]
   },
-  { id:'vulkan', name:'Vulkanregion', emoji:'🌋', desc:'Lava und Asche, Heimat der Feuerbestien.', minLevel:8, bg:'#2a0d0d',
+  { id:'vulkan', name:'Der Vulkan', desc:'Lava und Asche, Heimat der Feuerbestien.', bg:'#2a0d0d',
     enemies:[
-      { id:'lavadaemon', name:'Lava-Dämon', emoji:'😈', hp:40, deck:['daemon','feuer','donner','troll','blitz','flammenOger','feuerHexe','vampir'], reward:{ xp:120, gold:38, cards:['daemon','flammenOger'] }, type:'normal', diff:4 },
-      { id:'feuerriese', name:'Feuerriese', emoji:'🔥', hp:55, deck:['feuer','drache','troll','ritter','feuerElfe','flammenOger','feuerDrache','hexe','feuerHexe'], reward:{ xp:160, gold:50, cards:['feuer','feuerDrache'] }, type:'elite', diff:4 },
-      { id:'vulkanherr', name:'Herr des Vulkans', emoji:'🌋', hp:80, deck:['drache','daemon','feuer','donner','schatten','lich','feuerDrache','trollDaemon','feuerElfe','feuerHexe','schattendaemon','donnerTroll'], reward:{ xp:300, gold:100, cards:['feuerDrache','schattendaemon'] }, type:'boss', diff:6 },
+      { id:'lavadaemon', name:'Lava-Dämon', hp:40, deck:['daemon','feuer','donner','troll','blitz','flammenOger','feuerHexe','vampir'], reward:{ xp:120, gold:38, cards:[] }, type:'normal', diff:4 },
+      { id:'feuerriese', name:'Feuerriese', hp:55, deck:['feuer','drache','troll','ritter','feuerElfe','flammenOger','feuerDrache','hexe','feuerHexe'], reward:{ xp:160, gold:50, cards:[] }, type:'elite', diff:4 },
+      { id:'vulkanherr', name:'Herr des Vulkans', hp:80, deck:['drache','daemon','feuer','donner','schatten','lich','feuerDrache','trollDaemon','feuerElfe','feuerHexe','schattendaemon','donnerTroll'], reward:{ xp:300, gold:100, cards:[] }, type:'boss', diff:6 },
     ]
   },
-  { id:'schatten', name:'Schattenreich', emoji:'🌑', desc:'Ewige Finsternis, wo Dämonen regieren.', minLevel:12, bg:'#0d0d1a',
+  { id:'schattenreich', name:'Das Reich der Schatten', desc:'Ewige Finsternis, wo Dämonen regieren.', bg:'#0d0d1a',
     enemies:[
-      { id:'schattenassel', name:'Schattenassassin', emoji:'🗡', hp:45, deck:['schatten','daemon','flug','geist','schattenFlug','phantomFuerst','nachtFuerst','vampir'], reward:{ xp:150, gold:48, cards:['phantomFuerst','schattenFlug'] }, type:'normal', diff:4 },
-      { id:'finsterfuerst', name:'Finsterfürst', emoji:'😈', hp:65, deck:['daemon','lich','schatten','draenei','schattengnom','phantomFuerst','schattendaemon','nachtFuerst','hexe'], reward:{ xp:220, gold:70, cards:['schattendaemon','draenei'] }, type:'elite', diff:5 },
-      { id:'schattenkoenig', name:'König der Schatten', emoji:'👑', hp:100, deck:['lich','daemon','schatten','draenei','geist','phantomFuerst','schattendaemon','draeneiLich','nachtFuerst','schattengnom','vampir','nachtFuerst'], reward:{ xp:450, gold:150, cards:['draeneiLich','lichLicht'] }, type:'boss', diff:7 },
+      { id:'schattenassel', name:'Schattenassassin', hp:45, deck:['schatten','daemon','flug','geist','schattenFlug','phantomFuerst','nachtFuerst','vampir'], reward:{ xp:150, gold:48, cards:[] }, type:'normal', diff:4 },
+      { id:'finsterfuerst', name:'Finsterfürst', hp:65, deck:['daemon','lich','schatten','draenei','schattengnom','phantomFuerst','schattendaemon','nachtFuerst','hexe'], reward:{ xp:220, gold:70, cards:[] }, type:'elite', diff:5 },
+      { id:'schattenkoenig', name:'König der Schatten', hp:100, deck:['lich','daemon','schatten','draenei','geist','phantomFuerst','schattendaemon','draeneiLich','nachtFuerst','schattengnom','vampir','nachtFuerst'], reward:{ xp:450, gold:150, cards:[] }, type:'boss', diff:7 },
     ]
   },
-  { id:'himmel', name:'Himmelsreich', emoji:'☁', desc:'Das Reich der Götter, letzte Prüfung.', minLevel:18, bg:'#1a1a2a',
+  { id:'heiligesLand', name:'Heiliges Land', desc:'Das Reich der Götter, letzte Prüfung.', bg:'#1a1a2a',
     enemies:[
-      { id:'himmelsritter', name:'Himmelsritter', emoji:'⚔', hp:55, deck:['licht','ritter','flug','elfe','donner','lichtRitter','lichtElfe','sturmAdler'], reward:{ xp:200, gold:65, cards:['lichtRitter','lichtElfe'] }, type:'normal', diff:5 },
-      { id:'sturmgott', name:'Sturmgott', emoji:'⛈', hp:80, deck:['donner','drache','flug','draenei','donnerDrache','sturmAdler','tiefseeDrache','lichtRitter','sturmSchwinge'], reward:{ xp:300, gold:95, cards:['donnerDrache','tiefseeDrache'] }, type:'elite', diff:6 },
-      { id:'urdrache', name:'Urdrachengott', emoji:'🐉', hp:130, deck:['drache','lich','draenei','donner','feuer','eis','schatten','licht','donnerDrache','flugLich','draeneiLich','lichLicht','tiefseeDrache','feuerDrache'], reward:{ xp:600, gold:200, cards:['donnerDrache','flugLich'] }, type:'boss', diff:8 },
+      { id:'himmelsritter', name:'Himmelsritter', hp:55, deck:['licht','ritter','flug','elfe','donner','lichtRitter','lichtElfe','sturmAdler'], reward:{ xp:200, gold:65, cards:[] }, type:'normal', diff:5 },
+      { id:'sturmgott', name:'Sturmgott', hp:80, deck:['donner','drache','flug','draenei','donnerDrache','sturmAdler','tiefseeDrache','lichtRitter','sturmSchwinge'], reward:{ xp:300, gold:95, cards:[] }, type:'elite', diff:6 },
+      { id:'urdrache', name:'Urdrachengott', hp:130, deck:['drache','lich','draenei','donner','feuer','eis','schatten','licht','donnerDrache','flugLich','draeneiLich','lichLicht','tiefseeDrache','feuerDrache'], reward:{ xp:600, gold:200, cards:[] }, type:'boss', diff:8 },
+    ]
+  },
+  { id:'dimension', name:'Eine andere Dimension', desc:'Ein Ort jenseits aller Vorstellung. Nur die Stärksten überleben.', bg:'#0a0a1f',
+    enemies:[
+      { id:'dim1', name:'Dimensionswächter', hp:120, deck:['drache','lich','donner','feuer','eis','flammenOger','donnerDrache','eisDrache','feuerDrache','lichLicht'], reward:{ xp:400, gold:80, cards:[] }, type:'boss', diff:8 },
+      { id:'dim2', name:'Zeitzerreißer', hp:130, deck:['draenei','lich','schatten','daemon','draeneiLich','schattendaemon','phantomFuerst','nachtFuerst','vampir','lichLicht'], reward:{ xp:420, gold:85, cards:[] }, type:'boss', diff:8 },
+      { id:'dim3', name:'Raumverdreher', hp:140, deck:['donner','flug','drache','licht','sturmAdler','donnerDrache','flugLich','lichtRitter','sturmSchwinge','lichtElfe'], reward:{ xp:440, gold:90, cards:[] }, type:'boss', diff:8 },
+      { id:'dim4', name:'Seelenfresser', hp:150, deck:['lich','daemon','schatten','vampir','draeneiLich','schattendaemon','lichLicht','nachtFuerst','phantomFuerst','schattengnom'], reward:{ xp:460, gold:95, cards:[] }, type:'boss', diff:8 },
+      { id:'dim5', name:'Der Echokönig', hp:160, deck:['drache','ritter','donner','feuer','eis','eisDrache','feuerDrache','donnerDrache','eisRitter','lichtRitter'], reward:{ xp:480, gold:100, cards:[] }, type:'boss', diff:9 },
+      { id:'dim6', name:'Entropieherr', hp:170, deck:['lich','draenei','donner','schatten','licht','draeneiLich','lichLicht','donnerDrache','schattendaemon','sturmSchwinge'], reward:{ xp:500, gold:110, cards:[] }, type:'boss', diff:9 },
+      { id:'dim7', name:'Anomalie X', hp:180, deck:['drache','daemon','feuer','eis','donner','feuerDrache','eisDrache','donnerDrache','flammenOger','tiefseeDrache'], reward:{ xp:520, gold:120, cards:[] }, type:'boss', diff:9 },
+      { id:'dim8', name:'Das Nichts', hp:200, deck:['lich','schatten','daemon','draenei','licht','draeneiLich','lichLicht','schattendaemon','phantomFuerst','nachtFuerst'], reward:{ xp:550, gold:130, cards:[] }, type:'boss', diff:9 },
+      { id:'dim9', name:'Weltenverschlinger', hp:220, deck:['drache','lich','donner','feuer','schatten','licht','donnerDrache','feuerDrache','draeneiLich','lichLicht','flammenOger','sturmSchwinge'], reward:{ xp:600, gold:150, cards:[] }, type:'boss', diff:10 },
+      { id:'dim10', name:'Gott der Leere', hp:250, deck:['lich','daemon','drache','donner','feuer','eis','schatten','licht','draeneiLich','lichLicht','donnerDrache','feuerDrache','eisDrache','flugLich','sturmSchwinge'], reward:{ xp:800, gold:200, cards:[] }, type:'boss', diff:10 },
     ]
   },
 ];
@@ -1304,16 +1314,17 @@ const UI = {
     REGIONS.forEach(r => {
       const defeated = r.enemies.filter(e => State.defeatedEnemies.includes(r.id + '_' + e.id)).length;
       const total = r.enemies.length;
-      const locked = State.player.level < r.minLevel;
+      const idx = REGIONS.indexOf(r);
+      const prevRegion = idx > 0 ? REGIONS[idx - 1] : null;
+      const locked = prevRegion ? prevRegion.enemies.some(e => !State.defeatedEnemies.includes(prevRegion.id + '_' + e.id)) : false;
       const done = defeated === total;
       const div = document.createElement('div');
       div.className = 'region-card' + (locked ? ' locked' : '');
       div.innerHTML = `
-        <div class="region-icon">${r.emoji}</div>
         <div class="region-info">
           <div class="region-name">${r.name}</div>
           <div class="region-desc">${r.desc}</div>
-          <div class="region-progress">${defeated}/${total} Kämpfe gewonnen${locked ? ` · Ab Level ${r.minLevel}` : ''}</div>
+          <div class="region-progress">${defeated}/${total} Kämpfe gewonnen${locked ? ' · Gesperrt' : ''}</div>
         </div>
         <div class="region-badge${done ? ' done' : ''}">${done ? '✓' : defeated + '/' + total}</div>`;
       if (!locked) div.onclick = () => UI.showRegion(r);
@@ -1323,7 +1334,7 @@ const UI = {
 
   showRegion(region) {
     State.currentRegion = region;
-    document.getElementById('enemies-region-title').textContent = region.emoji + ' ' + region.name;
+    document.getElementById('enemies-region-title').textContent = region.name;
     const el = document.getElementById('enemies-list');
     el.innerHTML = '';
     region.enemies.forEach(e => {
@@ -1335,7 +1346,7 @@ const UI = {
       const typeCls = { normal:'badge-normal', elite:'badge-elite', boss:'badge-boss' }[e.type] || '';
       let stars = '★'.repeat(e.diff) + '☆'.repeat(Math.max(0, 8 - e.diff));
       div.innerHTML = `
-        <div class="enemy-portrait">${e.emoji}</div>
+        <div class="enemy-portrait" style="font-size:22px;color:var(--text2);font-weight:900">${{normal:'⚔',elite:'★',boss:'☠'}[e.type]||'⚔'}</div>
         <div class="enemy-info">
           <span class="enemy-type-badge ${typeCls}">${typeLabel}</span>
           <div class="enemy-name">${e.name}${defeated ? ' ✓' : ''}</div>
@@ -1481,6 +1492,11 @@ const UI = {
       div.onclick = () => {
         if (avail <= 0) return;
         if (State.deck.length >= 35) { UI.showToast('Deck ist voll! (35 Karten)'); return; }
+        if (c.isEndform) {
+          const endformsInDeck = State.deck.filter(did => { const dc = getCard(did); return dc && dc.isEndform; });
+          if (endformsInDeck.length >= 3) { UI.showToast('Max. 3 Kombokarten im Deck!'); return; }
+          if (State.deck.includes(id)) { UI.showToast('Kombokarte bereits im Deck (nur 1x erlaubt)!'); return; }
+        }
         State.deck.push(id);
         UI.renderDeckEditor();
       };
@@ -1617,7 +1633,6 @@ const Lab = {
     UI.renderCombo();
     UI.showToast(`🔬 ${rec.name} – Erforschung gestartet! (${researchLabel(rec.rarity)})`);
     this._startTimer();
-    setTimeout(() => { showScreen('screen-map'); UI.renderMap(); }, 1200);
   },
 
   forge(id) {
@@ -1987,7 +2002,7 @@ const Battle = {
       const canAfford = this.playerMana >= cardCost;
       if (!canAfford && !this.comboMode) cls += ' unaffordable';
       div.className = cls;
-      div.innerHTML = `<div class="mana-cost-badge">💎${cardCost}</div><div class="hc-art"><img src="${cardImgUrl(c.id)}" onerror="this.style.display='none';this.nextSibling.style.display='block'"><span class="hc-em">${c.emoji}</span></div><div class="hc-foot"><div class="hand-card-name">${c.name}</div><div class="hand-card-stats"><span class="mini-atk">⚔${c.atk}</span><span class="mini-def">🛡${c.def}</span></div></div>`;
+      div.innerHTML = `<div class="mana-cost-badge">${cardCost}</div><div class="hc-art"><img src="${cardImgUrl(c.id)}" onerror="this.style.display='none';this.nextSibling.style.display='block'"><span class="hc-em">${c.emoji}</span></div><div class="hc-foot"><div class="hand-card-name">${c.name}</div><div class="hand-card-stats"><span class="mini-atk">⚔${c.atk}</span><span class="mini-def">🛡${c.def}</span></div></div>`;
       div.onclick = () => Battle._selectHandCard(idx);
       el.appendChild(div);
     });
@@ -2112,8 +2127,9 @@ const Battle = {
     if (!checkIngredientsForRarity(recipe, allCards)) {
       this._log(`❌ ${recipe.name}: ${ingredientRarityRequirement(recipe.rarity)}`); this._render(); return;
     }
-    const comboCost = allCards.reduce((s, c) => s + (c?.cost || 1), 0);
-    if (this.playerMana < comboCost) { this._log(`❌ Nicht genug Mana! Benötigt: 💎${comboCost}`); this._render(); return; }
+    const fieldCost = fieldCard ? (fieldCard.cost || 1) : 0;
+    const comboCost = Math.max(1, allCards.reduce((s, c) => s + (c?.cost || 1), 0) - fieldCost);
+    if (this.playerMana < comboCost) { this._log(`Nicht genug Mana! Benötigt: ${comboCost}`); this._render(); return; }
 
     // Remove hand ingredients (highest index first) → graveyard
     [idx1, idx2, id3 ? idx3 : -1].filter(i => i >= 0).sort((a,b)=>b-a)
@@ -2406,31 +2422,29 @@ const Battle = {
       State.player.gold += goldReward;
       const r = this.enemy.reward;
       State.player.wins++;
-      r.cards.forEach(id => { if (getCard(id)) Game.addCard(id); });
       Game.addXp(r.xp);
       UI.updateHud();
       Game.save();
-      const cardsList = r.cards.map(id => { const c = getCard(id); return c ? `${c.emoji} ${c.name}` : id; }).join(', ');
-      // Boss chest reward (first win only)
-      const BOSS_CHEST = { anfaenger:'truhe', eis:'selteneTruhe', vulkan:'epischeTruhe', schatten:'mythTruhe', himmel:'mythTruhe' };
+      // Boss chest reward (first win only) — shown as chest animation
+      const BOSS_CHEST = { goblinwiese:'truhe', verwunschenerWald:'selteneTruhe', eiswueste:'selteneTruhe', vulkan:'epischeTruhe', schattenreich:'mythTruhe', heiligesLand:'mythTruhe', dimension:'mythTruhe' };
       const region = REGIONS.find(reg => reg.id === State.currentRegion.id);
       const isFinalBoss = isFirstWin && region && region.enemies[region.enemies.length - 1].id === this.enemy.id;
       const bossChestType = isFinalBoss ? BOSS_CHEST[State.currentRegion.id] : null;
-      let chestHtml = '';
-      if (bossChestType) {
-        const chestDefs = { truhe:{n:'Truhe',e:'📦'}, selteneTruhe:{n:'Seltene Truhe',e:'🔵'}, epischeTruhe:{n:'Epische Truhe',e:'🟣'}, mythTruhe:{n:'Truhe der Mythen',e:'🔮'} };
-        const chestCards = Shop._rollCards(bossChestType);
-        chestCards.forEach(id => Game.addCard(id));
-        Game.save();
-        const chestDef = chestDefs[bossChestType];
-        const chestCardNames = chestCards.map(id => { const c = getCard(id); return c ? `${c.emoji} ${c.name}` : id; }).join(', ');
-        chestHtml = `<div class="reward-item" style="color:var(--legendary)">🎁 ${chestDef.e} ${chestDef.n}: ${chestCardNames}</div>`;
-      }
-      const rewardHtml = `<div class="reward-list"><div class="reward-item">+${r.xp} XP</div><div class="reward-item">+${goldReward} G${isFirstWin ? ' (Erstmaliger Sieg)' : ' (Wiederholung)'}</div><div class="reward-item">Neue Karten: ${cardsList}</div>${chestHtml}</div>`;
+      const isDimensionBoss = isFirstWin && State.currentRegion.id === 'dimension';
+      const chestType = isDimensionBoss ? 'mythTruhe' : bossChestType;
+      const CHEST_DEFS = { truhe:{name:'Truhe',imgFile:'truhe.png'}, selteneTruhe:{name:'Seltene Truhe',imgFile:'seltenetruhe.png'}, epischeTruhe:{name:'Epische Truhe',imgFile:'epischetruhe.png'}, mythTruhe:{name:'Truhe der Mythen',imgFile:'truhedermythen.png'} };
+      const rewardHtml = `<div class="reward-list"><div class="reward-item">+${r.xp} XP</div><div class="reward-item">+${goldReward} G${isFirstWin ? ' (Erstmaliger Sieg)' : ' (Wiederholung)'}</div>${chestType ? `<div class="reward-item" style="color:var(--accent)">+ ${CHEST_DEFS[chestType].name} wartet auf dich!</div>` : ''}</div>`;
       setTimeout(() => {
-        Game.showModal('✦', 'Sieg!', rewardHtml, 'Zur Karte', null, () => {
-          showScreen('screen-map'); UI.renderMap(); UI.updateHud();
-        });
+        Game.showModal('✦', 'Sieg!', rewardHtml, chestType ? 'Truhe öffnen' : 'Zur Karte', chestType ? 'Zur Karte' : null,
+          () => {
+            if (chestType) {
+              const def = CHEST_DEFS[chestType];
+              const cards = Shop._rollCards(chestType);
+              Shop._showChestAnim(def, cards, () => { showScreen('screen-map'); UI.renderMap(); UI.updateHud(); });
+            } else { showScreen('screen-map'); UI.renderMap(); UI.updateHud(); }
+          },
+          chestType ? () => { showScreen('screen-map'); UI.renderMap(); UI.updateHud(); } : null
+        );
       }, 400);
       return true;
     }
