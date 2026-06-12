@@ -1552,7 +1552,7 @@ const Battle = {
   turn: 1, phase: 'player',
   selectedHandIdx: -1,
   combo1Idx: -1, combo2Idx: -1, combo3Idx: -1,
-  comboMode: false,
+  comboMode: false, comboFieldIdx: -1,
   attackMode: false,
   selectedAttackerIdx: -1,
   gameOver: false,
@@ -1578,7 +1578,7 @@ const Battle = {
     this.playerGraveyard = []; this.enemyGraveyard = [];
     this.turn = 1; this.phase = 'player';
     this.selectedHandIdx = -1; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1;
-    this.comboMode = false; this.attackMode = false;
+    this.comboMode = false; this.comboFieldIdx = -1; this.attackMode = false;
     this.selectAttackerMode = false; this.selectedAttackerIdx = -1;
     this.gameOver = false;
     this.playerMana = 1; this.playerMaxMana = 1; this.enemyMana = 1;
@@ -1694,11 +1694,15 @@ const Battle = {
         const isActiveAttacker = !isEnemy && this.attackMode && this.selectedAttackerIdx === i;
         const canDirectAttack = !isEnemy && this.phase === 'player'
           && !c.hasAttacked && !c.justPlayed && !this.attackMode && !this.comboMode && !this.gameOver;
+        const isComboField = !isEnemy && this.comboMode && !c.isEndform && !this.gameOver && this.comboFieldIdx < 0;
+        const isSelectedComboField = !isEnemy && this.comboFieldIdx === i;
         let cls = 'field-slot occupied';
         if (isEnemy) cls += ' enemy-slot';
         if (isTargetable) cls += ' target';
         if (canDirectAttack) cls += ' selectable-attacker';
         if (isActiveAttacker) cls += ' active-attacker';
+        if (isComboField) cls += ' selectable-attacker';
+        if (isSelectedComboField) cls += ' active-attacker';
         slot.className = cls;
         // Ability tags
         let tags = '';
@@ -1721,6 +1725,8 @@ const Battle = {
         </div>`;
         if (isTargetable) { const idx = i; slot.onclick = () => Battle._executeAttack(idx); }
         else if (isActiveAttacker) { slot.onclick = () => { Battle.attackMode = false; Battle.selectedAttackerIdx = -1; Battle._log('Angriff abgebrochen.'); Battle._render(); }; }
+        else if (isSelectedComboField) { const idx = i; slot.onclick = () => Battle._selectFieldComboCard(idx); }
+        else if (isComboField) { const idx = i; slot.onclick = () => Battle._selectFieldComboCard(idx); }
         else { const card = c; const idx = i; const canAtk = canDirectAttack; slot.onclick = () => Battle.showBattleCardDetail(card, canAtk ? idx : -1); }
       } else {
         slot.className = 'field-slot';
@@ -1778,14 +1784,33 @@ const Battle = {
       if (idx === this.combo1Idx) { this.combo1Idx = -1; this._render(); return; }
       if (idx === this.combo2Idx) { this.combo2Idx = -1; this._render(); return; }
       if (idx === this.combo3Idx) { this.combo3Idx = -1; this._render(); return; }
-      if (this.combo1Idx < 0) { this.combo1Idx = idx; this._render(); return; }
+
+      if (this.combo1Idx < 0) {
+        this.combo1Idx = idx;
+        if (this.comboFieldIdx >= 0) {
+          // Field card already selected — check field+hand1 for 2-card recipe
+          const fId = this.playerField[this.comboFieldIdx].id;
+          const h1 = this.playerHand[idx];
+          const r2 = COMBO_RECIPES.find(r => !r.card3 && ((r.card1===fId&&r.card2===h1)||(r.card1===h1&&r.card2===fId)));
+          if (r2) { this._executeCombo(); return; }
+          // Check partial 3-card (field+hand1+?)
+          const has3 = COMBO_RECIPES.some(r => r.card3 && State.discoveredCombos.includes(r.id) &&
+            [r.card1,r.card2,r.card3].includes(fId) && [r.card1,r.card2,r.card3].includes(h1));
+          if (has3) { this._log('⚗ 3-Karten-Kombi – wähle noch eine Handkarte!'); this._render(); return; }
+          this._log('❌ Keine Kombination für diese Feldkarte + Handkarte.');
+          this.combo1Idx = -1; this.comboFieldIdx = -1; this._render(); return;
+        }
+        this._render(); return;
+      }
       if (this.combo2Idx < 0) {
         this.combo2Idx = idx;
+        if (this.comboFieldIdx >= 0) {
+          // 3-card: field+hand1+hand2 → execute
+          this._executeCombo(); return;
+        }
         const id1 = this.playerHand[this.combo1Idx], id2 = this.playerHand[this.combo2Idx];
-        // Check 2-card recipe (selten/episch)
         const r2 = COMBO_RECIPES.find(r => !r.card3 && ((r.card1===id1&&r.card2===id2)||(r.card1===id2&&r.card2===id1)));
         if (r2) { this._executeCombo(); return; }
-        // Check partial match for 3-card recipe (legendär/mythisch)
         const has3 = COMBO_RECIPES.some(r => r.card3 && State.discoveredCombos.includes(r.id) &&
           [r.card1,r.card2,r.card3].includes(id1) && [r.card1,r.card2,r.card3].includes(id2));
         if (has3) { this._log('⚗ Legendäre Kombi – wähle eine dritte Karte!'); this._render(); return; }
@@ -1817,49 +1842,82 @@ const Battle = {
 
   startCombo() {
     if (this.phase !== 'player' || this.gameOver) return;
-    if (this.playerHand.length < 2) return;
-    this.comboMode = true; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1;
-    this._log('Wähle Karten zum Kombinieren (2 für selten/episch, 3 für legendär/mythisch)...');
+    const hasFieldBase = this.playerField.some(c => !c.isEndform);
+    if (this.playerHand.length < 2 && !hasFieldBase) return;
+    this.comboMode = true; this.comboFieldIdx = -1; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1;
+    this._log('Wähle Karten: Feld+Hand oder 2-3 Handkarten kombinieren...');
+    this._render();
+  },
+
+  _selectFieldComboCard(idx) {
+    if (!this.comboMode || this.gameOver) return;
+    const c = this.playerField[idx];
+    if (!c || c.isEndform) return;
+    if (this.comboFieldIdx === idx) {
+      this.comboFieldIdx = -1; this.combo1Idx = -1;
+      this._log('⚗ Feldkarten-Auswahl aufgehoben.'); this._render(); return;
+    }
+    this.comboFieldIdx = idx;
+    this._log(`⚗ ${c.emoji} ${c.name} (Feld) – jetzt Handkarte wählen...`);
     this._render();
   },
 
   _executeCombo() {
+    const hasField = this.comboFieldIdx >= 0;
+    const fieldSlotIdx = this.comboFieldIdx;
+    const fieldCard = hasField ? this.playerField[fieldSlotIdx] : null;
+    const fieldId = fieldCard?.id || null;
     const idx1 = this.combo1Idx, idx2 = this.combo2Idx, idx3 = this.combo3Idx;
-    const id1 = this.playerHand[idx1], id2 = this.playerHand[idx2];
-    const id3 = idx3 >= 0 ? this.playerHand[idx3] : null;
-    const c1 = getCard(id1), c2 = getCard(id2), c3 = id3 ? getCard(id3) : null;
-    this.comboMode = false; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1;
-    if (!c1 || !c2) { this._render(); return; }
-    if (c1.isEndform || c2.isEndform || (c3 && c3.isEndform)) {
-      this._log('Endformen können nicht kombiniert werden!'); this._render(); return;
-    }
+    const id1 = idx1 >= 0 ? this.playerHand[idx1] : null;
+    const id2 = idx2 >= 0 ? this.playerHand[idx2] : null;
+    const id3 = (!hasField && idx3 >= 0) ? this.playerHand[idx3] : null;
+
+    // Collect all ingredient IDs & cards
+    const allIds = [fieldId, id1, id2, id3].filter(Boolean);
+    const allCards = allIds.map(id => id === fieldId ? fieldCard : getCard(id));
+
+    // Reset combo state
+    this.comboMode = false; this.comboFieldIdx = -1; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1;
+
+    if (allCards.some(c => c?.isEndform)) { this._log('Endformen können nicht kombiniert werden!'); this._render(); return; }
+
+    // Find recipe
     let recipe;
-    if (id3) {
-      const ids = new Set([id1, id2, id3]);
+    if (allIds.length === 3) {
+      const ids = new Set(allIds);
       recipe = COMBO_RECIPES.find(r => r.card3 && ids.has(r.card1) && ids.has(r.card2) && ids.has(r.card3));
     } else {
-      recipe = COMBO_RECIPES.find(r => !r.card3 && ((r.card1===id1&&r.card2===id2)||(r.card1===id2&&r.card2===id1)));
+      const [a, b] = allIds;
+      recipe = COMBO_RECIPES.find(r => !r.card3 && ((r.card1===a&&r.card2===b)||(r.card1===b&&r.card2===a)));
     }
-    if (!recipe) { this._log(`❌ ${c1.name} + ${c2.name}${c3?' + '+c3.name:''} – keine Kombination!`); this._render(); return; }
+    if (!recipe) { this._log(`❌ ${allCards.map(c=>c?c.emoji+c.name:'?').join(' + ')} – keine Kombination!`); this._render(); return; }
     if (!State.discoveredCombos.includes(recipe.id)) { this._log(`🔒 ${recipe.name} noch nicht erforscht!`); this._render(); return; }
-    // Ingredient rarity validation
-    const _ingrs = [c1, c2].concat(c3 ? [c3] : []);
-    if (!checkIngredientsForRarity(recipe, _ingrs)) {
+
+    if (!checkIngredientsForRarity(recipe, allCards)) {
       this._log(`❌ ${recipe.name}: ${ingredientRarityRequirement(recipe.rarity)}`); this._render(); return;
     }
-    // Mana = sum of ingredient costs
-    const comboCost = (c1.cost||1) + (c2.cost||1) + (c3 ? (c3.cost||1) : 0);
-    if (this.playerMana < comboCost) { this._log(`❌ Nicht genug Mana! Benötigt: 💎${comboCost}, vorhanden: 💎${this.playerMana}`); this._render(); return; }
-    // Remove cards (highest index first) → graveyard
-    const idxs = id3 ? [idx1, idx2, idx3] : [idx1, idx2];
-    idxs.sort((a,b) => b - a).forEach(i => { this.playerGraveyard.push(this.playerHand.splice(i, 1)[0]); });
+    const comboCost = allCards.reduce((s, c) => s + (c?.cost || 1), 0);
+    if (this.playerMana < comboCost) { this._log(`❌ Nicht genug Mana! Benötigt: 💎${comboCost}`); this._render(); return; }
+
+    // Remove hand ingredients (highest index first) → graveyard
+    [idx1, idx2, id3 ? idx3 : -1].filter(i => i >= 0).sort((a,b)=>b-a)
+      .forEach(i => { this.playerGraveyard.push(this.playerHand.splice(i, 1)[0]); });
     this.playerMana -= comboCost;
+
     const resultCard = getCard(recipe.id);
     const result = { ...recipe, ...resultCard, id: recipe.id, isEndform: true, hasAttacked: false, justPlayed: true, shieldActive: resultCard?.shield ? true : false };
-    if (this.playerField.length < 4) {
+    this._log(`✨ ${allCards.map(c=>`${c.emoji}${c.name}`).join(' + ')} = ${recipe.emoji} ${recipe.name}! (⚔${recipe.atk} 🛡${recipe.def})`);
+
+    if (hasField) {
+      // Replace field card in place (can't attack this round: justPlayed=true)
+      this.playerGraveyard.push(fieldId);
+      this.playerField[fieldSlotIdx] = result;
+    } else if (this.playerField.length < 4) {
       this.playerField.push(result);
-      this._log(`✨ ${c1.emoji}${c1.name} + ${c2.emoji}${c2.name}${c3?' + '+c3.emoji+c3.name:''} = ${recipe.emoji} ${recipe.name}! (⚔${recipe.atk} 🛡${recipe.def})`);
-    } else { this._log('Feld voll – Kombination geht in die Hand.'); this.playerHand.push(recipe.id); }
+    } else {
+      this._log('Feld voll – Kombination geht in die Hand.');
+      this.playerHand.push(recipe.id);
+    }
     this._render();
   },
 
@@ -1961,7 +2019,7 @@ const Battle = {
 
   _doEndTurn() {
     this.attackMode = false; this.selectedAttackerIdx = -1;
-    this.comboMode = false; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1; this.selectedHandIdx = -1;
+    this.comboMode = false; this.comboFieldIdx = -1; this.combo1Idx = -1; this.combo2Idx = -1; this.combo3Idx = -1; this.selectedHandIdx = -1;
     this.phase = 'enemy';
     this._log('Dein Zug endet. Gegner ist dran...');
     this._render();
@@ -2097,7 +2155,22 @@ const Battle = {
       UI.updateHud();
       Game.save();
       const cardsList = r.cards.map(id => { const c = getCard(id); return c ? `${c.emoji} ${c.name}` : id; }).join(', ');
-      const rewardHtml = `<div class="reward-list"><div class="reward-item">⭐ +${r.xp} XP</div><div class="reward-item">💰 +${goldReward} Gold${isFirstWin ? ' 🌟' : ' (Wiederholung)'}</div><div class="reward-item">🃏 Neue Karten: ${cardsList}</div></div>`;
+      // Boss chest reward (first win only)
+      const BOSS_CHEST = { anfaenger:'truhe', eis:'selteneTruhe', vulkan:'epischeTruhe', schatten:'mythTruhe', himmel:'mythTruhe' };
+      const region = REGIONS.find(reg => reg.id === State.currentRegion.id);
+      const isFinalBoss = isFirstWin && region && region.enemies[region.enemies.length - 1].id === this.enemy.id;
+      const bossChestType = isFinalBoss ? BOSS_CHEST[State.currentRegion.id] : null;
+      let chestHtml = '';
+      if (bossChestType) {
+        const chestDefs = { truhe:{n:'Truhe',e:'📦'}, selteneTruhe:{n:'Seltene Truhe',e:'🔵'}, epischeTruhe:{n:'Epische Truhe',e:'🟣'}, mythTruhe:{n:'Truhe der Mythen',e:'🔮'} };
+        const chestCards = Shop._rollCards(bossChestType);
+        chestCards.forEach(id => Game.addCard(id));
+        Game.save();
+        const chestDef = chestDefs[bossChestType];
+        const chestCardNames = chestCards.map(id => { const c = getCard(id); return c ? `${c.emoji} ${c.name}` : id; }).join(', ');
+        chestHtml = `<div class="reward-item" style="color:var(--legendary)">🎁 ${chestDef.e} ${chestDef.n}: ${chestCardNames}</div>`;
+      }
+      const rewardHtml = `<div class="reward-list"><div class="reward-item">⭐ +${r.xp} XP</div><div class="reward-item">💰 +${goldReward} Gold${isFirstWin ? ' 🌟' : ' (Wiederholung)'}</div><div class="reward-item">🃏 Neue Karten: ${cardsList}</div>${chestHtml}</div>`;
       setTimeout(() => {
         Game.showModal('🏆', 'Sieg!', rewardHtml, 'Zur Karte', null, () => {
           showScreen('screen-map'); UI.renderMap(); UI.updateHud();
