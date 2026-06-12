@@ -52,14 +52,48 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 
 /* ---- MAIN MENU ---- */
 #screen-menu {
-  background: radial-gradient(ellipse at top, #1a0e35 0%, #0a0a0f 60%);
-  align-items: center; justify-content: center; gap: 0;
+  background: url('https://ebpndnpiuummplxyhqai.supabase.co/storage/v1/object/public/card-images/hintergrund.png') center top/cover no-repeat;
+  align-items: center; justify-content: space-between;
+  padding-top: 28px; padding-bottom: 52px;
 }
-.menu-glow {
-  position: absolute; top: -80px; left: 50%; transform: translateX(-50%);
-  width: 320px; height: 320px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(124,92,191,0.22) 0%, transparent 70%);
+#screen-menu::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 18%, rgba(0,0,0,0.0) 38%, rgba(0,0,0,0.62) 68%, rgba(0,0,0,0.84) 100%);
   pointer-events: none;
+}
+@media (min-width: 600px) {
+  #screen-menu {
+    background: url('https://ebpndnpiuummplxyhqai.supabase.co/storage/v1/object/public/card-images/desktophintergrund.png') center center/cover no-repeat;
+    justify-content: flex-end; padding-top: 0;
+  }
+  #screen-menu .menu-header { display: none; }
+}
+.menu-header {
+  position: relative; z-index: 1;
+  text-align: center; padding: 0 24px; width: 100%;
+}
+.menu-header .menu-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 27px; color: #0f0b04; letter-spacing: 1px; margin-bottom: 4px;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35), 0 2px 10px rgba(0,0,0,0.3);
+}
+.menu-header .menu-sub {
+  color: #0f0b04; font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35), 0 1px 6px rgba(0,0,0,0.3);
+}
+.main-menu-btns {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  width: 100%; padding: 0 32px; max-width: 360px;
+}
+#screen-menu .menu-btn {
+  background: #0a0a0f; border-color: #7ec8e8; color: #9ddff5; width: 100%; font-weight: 600;
+}
+#screen-menu .menu-btn:hover { background: #131320; border-color: #b8e8ff; color: #c8f0ff; }
+#screen-menu .menu-btn.primary { font-weight: 700; }
+.main-menu-btns .menu-version { position: static; margin-top: 6px; text-shadow: 0 1px 4px rgba(0,0,0,0.9); }
+.menu-glow {
+  display: none;
 }
 .menu-title {
   font-size: 42px; font-weight: 800; letter-spacing: 3px;
@@ -550,14 +584,16 @@ html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text
 
 <!-- MAIN MENU -->
 <div id="screen-menu" class="screen">
-  <div class="menu-glow"></div>
-  <div class="menu-title">ARCANE FORGE</div>
-  <div style="color:var(--text3);font-size:12px;letter-spacing:2px;margin-bottom:5px;text-align:center;">by Felix Hanschke</div>
-  <div class="menu-sub">Das Sammelkartenspiel</div>
-  <button class="menu-btn primary" onclick="Game.newGame()">⚗ Neues Spiel</button>
-  <button class="menu-btn" onclick="Game.loadGame()">📂 Laden</button>
-  <button class="menu-btn" onclick="showScreen('screen-settings');UI.updateHud()">⚙ Einstellungen</button>
-  <div class="menu-version">v2.0 – Arcane Forge by Felix Hanschke</div>
+  <div class="menu-header animate-fadein">
+    <div class="menu-title">ARCANE FORGE</div>
+    <div class="menu-sub">Kombiniere und siege</div>
+  </div>
+  <div class="main-menu-btns animate-fadein">
+    <button class="menu-btn primary" onclick="Game.newGame()">Neues Spiel</button>
+    <button class="menu-btn" onclick="Game.loadGame()">Laden</button>
+    <button class="menu-btn" onclick="showScreen('screen-settings');UI.updateHud()">Einstellungen</button>
+    <div class="menu-version" style="text-shadow:0 1px 6px rgba(0,0,0,0.9)">v4.1 – Arcane Forge by Felix Hanschke</div>
+  </div>
 </div>
 
 <!-- MAP SCREEN -->
